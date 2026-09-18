@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 import openpyxl
 
-from app.models import Karyawan, JenisReward, ReasonClaim
+from app.models import Karyawan, JenisReward, ReasonClaim, Jabatan
 
 
 class BarisImportError(Exception):
@@ -210,6 +210,80 @@ def parse_template_pusat_berita_acara(file_storage):
                 "status_bayar": str(baris.get("Status Bayar") or "").strip(),
                 "keterangan_pusat": str(baris.get("Keterangan") or "").strip(),
                 "reason_claim": reason,
+            }
+        )
+
+    return baris_valid, masalah
+
+
+_TANDA_AKTIF_FALSE = {"tidak", "no", "false", "0", "resign", "non aktif", "nonaktif"}
+
+
+def _ke_bool_aktif(nilai):
+    teks = str(nilai or "").strip().lower()
+    if teks in _TANDA_AKTIF_FALSE:
+        return False
+    return True  # default aktif kalau kosong/tidak dikenali
+
+
+def parse_template_karyawan(file_storage):
+    """Template import Karyawan. Kolom wajib: Kode DP, NIK Karyawan, Nama, Jabatan,
+    Tanggal Join. Kolom opsional: NPWP, NIK KTP, Rekening Bank, Alamat NPWP, Status
+    Pajak, Jenis Kelamin, Tanggal Resign, Status Aktif, Limit Deposit Individual,
+    Potongan BPJS-TK.
+
+    Pencocokan baris: NIK Karyawan sudah ada -> UPDATE data karyawan tsb; NIK baru ->
+    INSERT karyawan baru. Jabatan dicocokkan by nama, harus sudah ada di master.
+
+    Mengembalikan (baris_valid, masalah). baris_valid = list of dict siap dipakai
+    untuk create/update Karyawan.
+    """
+    baris_list = baca_baris_file(file_storage)
+    peta_jabatan = {j.nama.strip().lower(): j for j in Jabatan.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for i, baris in enumerate(baris_list, start=2):  # baris 1 = header
+        nik = str(baris.get("NIK Karyawan") or baris.get("NIK") or "").strip()
+        nama = str(baris.get("Nama") or "").strip()
+        if not nik and not nama:
+            continue  # baris kosong, lewati diam-diam
+        if not nik or not nama:
+            masalah.append(f"Baris {i}: NIK Karyawan dan Nama wajib diisi, dilewati.")
+            continue
+
+        nama_jabatan = str(baris.get("Jabatan") or "").strip()
+        jabatan = peta_jabatan.get(nama_jabatan.lower())
+        if jabatan is None:
+            masalah.append(f"Baris {i} (NIK {nik}): Jabatan '{nama_jabatan}' tidak ditemukan, dilewati.")
+            continue
+
+        tanggal_join = _ke_tanggal(baris.get("Tanggal Join"))
+        if tanggal_join is None:
+            masalah.append(f"Baris {i} (NIK {nik}): Tanggal Join kosong/format salah, dilewati.")
+            continue
+
+        limit_deposit_raw = baris.get("Limit Deposit Individual")
+        limit_deposit = _ke_desimal(limit_deposit_raw) if str(limit_deposit_raw or "").strip() else None
+
+        baris_valid.append(
+            {
+                "nik_karyawan": nik,
+                "nama": nama,
+                "jabatan_id": jabatan.id,
+                "kode_dp": str(baris.get("Kode DP") or "").strip(),
+                "npwp": str(baris.get("NPWP") or "").strip(),
+                "nik_ktp": str(baris.get("NIK KTP") or "").strip(),
+                "rekening_bank": str(baris.get("Rekening Bank") or "").strip(),
+                "alamat_npwp": str(baris.get("Alamat NPWP") or "").strip(),
+                "status_pajak": str(baris.get("Status Pajak") or "").strip(),
+                "jenis_kelamin": (str(baris.get("Jenis Kelamin") or "").strip().upper()[:1] or None),
+                "tanggal_join": tanggal_join,
+                "tanggal_resign": _ke_tanggal(baris.get("Tanggal Resign")),
+                "status_aktif": _ke_bool_aktif(baris.get("Status Aktif")),
+                "limit_deposit_individual": limit_deposit,
+                "potongan_bpjs_tk": _ke_desimal(baris.get("Potongan BPJS-TK")),
             }
         )
 

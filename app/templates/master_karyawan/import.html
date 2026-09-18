@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Import Karyawan{% endblock %}
+{% block content %}
+<h4 class="mb-3">Import Data Karyawan</h4>
+{% if form.errors %}
+<div class="alert alert-danger">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card shadow-sm" style="max-width: 600px;">
+  <div class="card-body">
+    <p class="text-muted">
+      Kolom: Kode DP, NIK Karyawan, Nama, Jabatan, NPWP, NIK KTP, Rekening Bank, Alamat NPWP,
+      Status Pajak, Jenis Kelamin, Tanggal Join, Tanggal Resign, Status Aktif, Limit Deposit Individual, Potongan BPJS-TK.
+    </p>
+    <ul class="text-muted small">
+      <li><strong>NIK Karyawan sudah ada</strong> → data karyawan itu di-update. <strong>NIK baru</strong> → karyawan baru dibuat.</li>
+      <li><strong>Jabatan</strong> dicocokkan berdasarkan nama — pastikan sudah ada di menu Data Jabatan sebelum import.</li>
+      <li>Kolom wajib: Kode DP, NIK Karyawan, Nama, Jabatan, Tanggal Join. Sisanya boleh kosong.</li>
+      <li>Status Aktif: isi "Ya" atau kosongkan untuk aktif, isi "Tidak" untuk non-aktif.</li>
+      <li>Format tanggal: YYYY-MM-DD (mis. 2024-01-15) atau DD/MM/YYYY.</li>
+    </ul>
+    <a href="{{ url_for('master_karyawan.download_template_import') }}" class="btn btn-sm btn-outline-secondary mb-3">Download Template Excel</a>
+
+    <form method="POST" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.file.label(class="form-label") }}
+        {{ form.file(class="form-control") }}
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('master_karyawan.index') }}" class="btn btn-outline-secondary">Batal</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
