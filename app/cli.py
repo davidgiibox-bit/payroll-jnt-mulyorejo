@@ -1,3 +1,4 @@
+import os
 import click
 from datetime import date
 
@@ -40,33 +41,57 @@ def register_cli(app):
     @click.option("--nama", prompt="Nama Lengkap")
     def buat_superadmin(username, password, nama):
         """Buat akun superadmin pertama (PIC), lengkap dengan jabatan & karyawan placeholder."""
-        if User.query.filter_by(username=username).first():
-            click.echo("Username sudah dipakai.")
+        pesan = _buat_superadmin(username, password, nama)
+        click.echo(pesan)
+
+    @app.cli.command("seed-superadmin-dari-env")
+    def seed_superadmin_dari_env():
+        """Buat superadmin dari env var SUPERADMIN_USERNAME/PASSWORD/NAMA kalau belum ada
+        user sama sekali. Aman dijalankan berulang (no-op kalau sudah ada user, atau kalau
+        env var belum diisi) — dipakai di buildCommand Render supaya tidak perlu Shell
+        (Shell tidak tersedia di paket gratis)."""
+        if User.query.first() is not None:
+            click.echo("Sudah ada user di database, dilewati.")
             return
 
-        jabatan_pic = Jabatan.query.filter_by(nama="PIC").first()
-        if jabatan_pic is None:
-            jabatan_pic = Jabatan(nama="PIC", gaji_pokok_default=0)
-            db.session.add(jabatan_pic)
-            db.session.flush()
+        username = os.environ.get("SUPERADMIN_USERNAME")
+        password = os.environ.get("SUPERADMIN_PASSWORD")
+        nama = os.environ.get("SUPERADMIN_NAMA", "Admin")
+        if not username or not password:
+            click.echo("SUPERADMIN_USERNAME/SUPERADMIN_PASSWORD belum diatur, dilewati.")
+            return
 
-        karyawan = Karyawan(
-            kode_dp="MULYOREJO173",
-            nik_karyawan=f"ADMIN-{username}",
-            nama=nama,
-            jabatan_id=jabatan_pic.id,
-            tanggal_join=date.today(),
-            status_aktif=True,
-            potongan_bpjs_tk=0,
-        )
-        db.session.add(karyawan)
+        pesan = _buat_superadmin(username, password, nama)
+        click.echo(pesan)
+
+
+def _buat_superadmin(username, password, nama):
+    if User.query.filter_by(username=username).first():
+        return f"Username '{username}' sudah dipakai."
+
+    jabatan_pic = Jabatan.query.filter_by(nama="PIC").first()
+    if jabatan_pic is None:
+        jabatan_pic = Jabatan(nama="PIC", gaji_pokok_default=0)
+        db.session.add(jabatan_pic)
         db.session.flush()
 
-        db.session.add(DepositSaldo(karyawan_id=karyawan.id, saldo_terkumpul=0))
+    karyawan = Karyawan(
+        kode_dp="MULYOREJO173",
+        nik_karyawan=f"ADMIN-{username}",
+        nama=nama,
+        jabatan_id=jabatan_pic.id,
+        tanggal_join=date.today(),
+        status_aktif=True,
+        potongan_bpjs_tk=0,
+    )
+    db.session.add(karyawan)
+    db.session.flush()
 
-        user = User(karyawan_id=karyawan.id, username=username, is_superadmin=True)
-        user.set_password(password)
-        db.session.add(user)
+    db.session.add(DepositSaldo(karyawan_id=karyawan.id, saldo_terkumpul=0))
 
-        db.session.commit()
-        click.echo(f"Superadmin '{username}' berhasil dibuat.")
+    user = User(karyawan_id=karyawan.id, username=username, is_superadmin=True)
+    user.set_password(password)
+    db.session.add(user)
+
+    db.session.commit()
+    return f"Superadmin '{username}' berhasil dibuat."
