@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Payroll — {{ periode.label }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="mb-0">Payroll — {{ periode.label }}</h4>
+    {% if periode.status == 'final' %}
+    <span class="badge bg-success">Final</span>
+    {% else %}
+    <span class="badge bg-warning text-dark">Draft</span>
+    {% endif %}
+  </div>
+  <div>
+    {% if periode.status != 'final' and level_akses_user('payroll') in ['edit', 'approve'] %}
+    <form action="{{ url_for('payroll.proses', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tarik ulang data absensi & hitung ulang payroll periode ini?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary btn-sm">Proses / Hitung Ulang</button>
+    </form>
+    {% endif %}
+    {% if periode.status != 'final' and level_akses_user('payroll') == 'approve' %}
+    <form action="{{ url_for('payroll.finalisasi', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Finalisasi periode ini? Slip gaji tidak bisa diubah lagi setelah final.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-success btn-sm">Finalisasi</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <h6 class="mb-3">Status Kelengkapan Komponen</h6>
+    <div class="row row-cols-2 row-cols-md-4 g-2">
+      {% for item in status_kelengkapan %}
+      <div class="col">
+        <div class="d-flex align-items-center gap-2 small">
+          {% if item.jumlah > 0 %}
+          <span class="badge bg-success">✓</span>
+          {% else %}
+          <span class="badge bg-secondary">-</span>
+          {% endif %}
+          <span>{{ item.label }} {% if item.jumlah > 0 %}({{ item.jumlah }}){% endif %}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Karyawan</th>
+          <th>Jabatan</th>
+          <th>THP</th>
+          <th>Total Akhir</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slip in daftar_slip %}
+        <tr>
+          <td>{{ slip.karyawan.nama }}</td>
+          <td>{{ slip.karyawan.jabatan.nama }}</td>
+          <td>Rp {{ "{:,.0f}".format(slip.subtotal_thp).replace(",", ".") }}</td>
+          <td>Rp {{ "{:,.0f}".format(slip.total_akhir).replace(",", ".") }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('payroll.lihat_slip', slip_id=slip.id) }}" class="btn btn-sm btn-outline-primary">Lihat Slip</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Belum ada slip. Klik "Proses / Hitung Ulang" untuk memulai.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

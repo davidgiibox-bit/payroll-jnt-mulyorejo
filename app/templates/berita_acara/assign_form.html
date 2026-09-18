@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Assign Kasus {{ kasus.awb }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">Assign Kasus — AWB {{ kasus.awb }}</h4>
+<p class="text-muted">Nilai Claim: Rp {{ "{:,.0f}".format(kasus.nominal_pusat or 0).replace(",", ".") }} — Mitra: {{ kasus.mitra or '-' }} — Region: {{ kasus.region or '-' }}</p>
+<p class="text-muted">Keterangan pusat: {{ kasus.keterangan_pusat or '-' }}</p>
+
+<div class="card shadow-sm" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.karyawan_id.label(class="form-label") }}
+        {{ form.karyawan_id(class="form-select") }}
+      </div>
+      <div class="mb-3">
+        {{ form.reason_claim_id.label(class="form-label") }}
+        {{ form.reason_claim_id(class="form-select") }}
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('berita_acara.assign_index') }}" class="btn btn-outline-secondary">Batal</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

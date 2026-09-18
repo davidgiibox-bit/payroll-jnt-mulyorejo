@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Login — Payroll J&T Mulyorejo{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+    <div class="card shadow-sm mt-5">
+      <div class="card-body p-4">
+        <h4 class="mb-3 text-center">Payroll J&T — Mulyorejo</h4>
+        <form method="POST">
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.username.label(class="form-label") }}
+            {{ form.username(class="form-control", autofocus=true) }}
+          </div>
+          <div class="mb-3">
+            {{ form.password.label(class="form-label") }}
+            {{ form.password(class="form-control") }}
+          </div>
+          <div class="form-check mb-3">
+            {{ form.ingat_saya(class="form-check-input") }}
+            {{ form.ingat_saya.label(class="form-check-label") }}
+          </div>
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

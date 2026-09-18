@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Buat Event Entertainment{% endblock %}
+{% block content %}
+<h4 class="mb-3">Buat Event Entertainment</h4>
+<div class="card shadow-sm" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.periode_payroll_id.label(class="form-label") }}
+        {{ form.periode_payroll_id(class="form-select") }}
+      </div>
+      <div class="mb-3">
+        {{ form.deskripsi.label(class="form-label") }}
+        {{ form.deskripsi(class="form-control") }}
+      </div>
+      <div class="mb-3">
+        {{ form.total_biaya.label(class="form-label") }}
+        {{ form.total_biaya(class="form-control") }}
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('reward.entertainment_index') }}" class="btn btn-outline-secondary">Batal</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

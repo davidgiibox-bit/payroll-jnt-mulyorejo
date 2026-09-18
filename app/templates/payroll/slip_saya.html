@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Slip Gaji Saya{% endblock %}
+{% block content %}
+<h4 class="mb-3">Slip Gaji Saya</h4>
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th>Status</th>
+          <th>Total Diterima</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for slip in daftar_slip %}
+        <tr>
+          <td>{{ slip.periode.label }}</td>
+          <td>
+            {% if slip.status == 'final' %}
+            <span class="badge bg-success">Final</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Draft</span>
+            {% endif %}
+          </td>
+          <td>Rp {{ "{:,.0f}".format(slip.total_akhir).replace(",", ".") }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('payroll.lihat_slip', slip_id=slip.id) }}" class="btn btn-sm btn-outline-primary">Lihat</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Belum ada slip gaji.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

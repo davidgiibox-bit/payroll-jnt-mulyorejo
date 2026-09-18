@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Hak Akses{% endblock %}
+{% block content %}
+<h4 class="mb-3">Matriks Hak Akses — Jabatan x Menu</h4>
+<p class="text-muted">Atur level akses tiap jabatan untuk setiap menu: Tidak Ada / Lihat / Edit / Approve.</p>
+
+<form method="POST" action="{{ url_for('admin_akses.simpan') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-bordered mb-0 align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="min-width:160px;">Jabatan</th>
+            {% for menu in daftar_menu %}
+            <th style="min-width:150px;">{{ menu.nama_menu }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for jabatan in daftar_jabatan %}
+          <tr>
+            <td class="fw-semibold">{{ jabatan.nama }}</td>
+            {% for menu in daftar_menu %}
+            {% set level_saat_ini = peta_akses.get((jabatan.id, menu.id), 'tidak_ada') %}
+            <td>
+              <select name="akses_{{ jabatan.id }}_{{ menu.id }}" class="form-select form-select-sm">
+                {% for level in level_choices %}
+                <option value="{{ level }}" {% if level == level_saat_ini %}selected{% endif %}>
+                  {{ level.replace('_', ' ') | title }}
+                </option>
+                {% endfor %}
+              </select>
+            </td>
+            {% endfor %}
+          </tr>
+          {% else %}
+          <tr><td colspan="{{ daftar_menu | length + 1 }}" class="text-center text-muted py-4">Belum ada data jabatan.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary mt-3">Simpan Matriks</button>
+</form>
+{% endblock %}

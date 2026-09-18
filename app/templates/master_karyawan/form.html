@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ judul }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">{{ judul }}</h4>
+{% if form.errors %}
+<div class="alert alert-danger">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="row g-3">
+        <div class="col-12 col-md-4">
+          {{ form.kode_dp.label(class="form-label") }}
+          {{ form.kode_dp(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ form.nik_karyawan.label(class="form-label") }}
+          {{ form.nik_karyawan(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ form.jabatan_id.label(class="form-label") }}
+          {{ form.jabatan_id(class="form-select") }}
+        </div>
+        <div class="col-12">
+          {{ form.nama.label(class="form-label") }}
+          {{ form.nama(class="form-control") }}
+        </div>
+
+        <div class="col-12 col-md-4">
+          {{ form.npwp.label(class="form-label") }}
+          {{ form.npwp(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ form.nik_ktp.label(class="form-label") }}
+          {{ form.nik_ktp(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ form.rekening_bank.label(class="form-label") }}
+          {{ form.rekening_bank(class="form-control") }}
+        </div>
+        <div class="col-12">
+          {{ form.alamat_npwp.label(class="form-label") }}
+          {{ form.alamat_npwp(class="form-control", rows=2) }}
+        </div>
+
+        <div class="col-12 col-md-3">
+          {{ form.status_pajak.label(class="form-label") }}
+          {{ form.status_pajak(class="form-select") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.jenis_kelamin.label(class="form-label") }}
+          {{ form.jenis_kelamin(class="form-select") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.tanggal_join.label(class="form-label") }}
+          {{ form.tanggal_join(class="form-control", type="date") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.tanggal_resign.label(class="form-label") }}
+          {{ form.tanggal_resign(class="form-control", type="date") }}
+        </div>
+
+        <div class="col-12 col-md-4">
+          {{ form.limit_deposit_individual.label(class="form-label") }}
+          {{ form.limit_deposit_individual(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4">
+          {{ form.potongan_bpjs_tk.label(class="form-label") }}
+          {{ form.potongan_bpjs_tk(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-4 d-flex align-items-end">
+          <div class="form-check">
+            {{ form.status_aktif(class="form-check-input") }}
+            {{ form.status_aktif.label(class="form-check-label") }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('master_karyawan.index') }}" class="btn btn-outline-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Review Sebelum Final{% endblock %}
+{% block content %}
+<h4 class="mb-3">Review Sebelum Final — diurutkan dari potongan terbesar</h4>
+
+<form method="GET" class="mb-3">
+  <div class="input-group" style="max-width: 350px;">
+    <select name="periode_id" class="form-select" onchange="this.form.submit()">
+      {% for p in daftar_periode %}
+      <option value="{{ p.id }}" {% if p.id == periode_id_dipilih %}selected{% endif %}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if periode_id_dipilih and level_akses_user('berita_acara') == 'approve' %}
+<form method="POST" action="{{ url_for('berita_acara.terapkan', periode_id=periode_id_dipilih) }}" class="mb-3" onsubmit="return confirm('Terapkan semua potongan Berita Acara/Cicilan ke periode ini?');">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit" class="btn btn-success">Terapkan ke Periode Ini</button>
+</form>
+{% endif %}
+
+{% for nama, data in daftar_terurut %}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between">
+      <h6 class="mb-2">{{ nama }}</h6>
+      <span class="fw-bold">Total: Rp {{ "{:,.0f}".format(data.total).replace(",", ".") }}</span>
+    </div>
+    <table class="table table-sm mb-0">
+      <thead><tr><th>AWB</th><th>Nominal</th><th>Reason</th><th>Keputusan</th><th></th></tr></thead>
+      <tbody>
+        {% for kasus in data.kasus %}
+        <tr>
+          <td>{{ kasus.awb }}</td>
+          <td>Rp {{ "{:,.0f}".format(kasus.nominal_final or 0).replace(",", ".") }}</td>
+          <td>{{ kasus.reason_claim.nama if kasus.reason_claim else '-' }}</td>
+          <td>{{ kasus.keputusan or '-' }}{% if kasus.keputusan == 'cicil' %} ({{ kasus.jumlah_bulan_cicilan }}x, sisa Rp{{ "{:,.0f}".format(kasus.cicilan.saldo_sisa).replace(",", ".") if kasus.cicilan else 0 }}){% endif %}</td>
+          <td class="text-end">
+            {% if not kasus.sudah_diterapkan and level_akses_user('berita_acara') in ['edit', 'approve'] %}
+            <a href="{{ url_for('berita_acara.ubah_keputusan', kasus_id=kasus.id) }}" class="btn btn-sm btn-outline-secondary">Ubah</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<p class="text-muted">Tidak ada kasus yang menunggu diterapkan.</p>
+{% endfor %}
+{% endblock %}

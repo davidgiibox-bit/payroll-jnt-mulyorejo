@@ -1,0 +1,216 @@
+import csv
+import io
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+import openpyxl
+
+from app.models import Karyawan, JenisReward, ReasonClaim
+
+
+class BarisImportError(Exception):
+    pass
+
+
+def _baca_baris_xlsx(file_storage):
+    workbook = openpyxl.load_workbook(file_storage, read_only=True, data_only=True)
+    sheet = workbook.active
+    baris_iter = sheet.iter_rows(values_only=True)
+    header = [str(h).strip() if h else "" for h in next(baris_iter)]
+    for baris in baris_iter:
+        if baris is None or all(v is None for v in baris):
+            continue
+        yield dict(zip(header, baris))
+
+
+def _baca_baris_csv(file_storage):
+    teks = file_storage.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(teks))
+    for baris in reader:
+        yield baris
+
+
+def baca_baris_file(file_storage):
+    nama_file = (file_storage.filename or "").lower()
+    if nama_file.endswith(".csv"):
+        return list(_baca_baris_csv(file_storage))
+    return list(_baca_baris_xlsx(file_storage))
+
+
+def _ke_desimal(nilai):
+    if nilai in (None, ""):
+        return Decimal("0")
+    try:
+        return Decimal(str(nilai).replace(",", "."))
+    except InvalidOperation:
+        return Decimal("0")
+
+
+def parse_template_nik_nominal_keterangan(file_storage):
+    """Parse template generik: kolom NIK, Nominal, Keterangan (nama kolom fleksibel:
+    'NIK'/'NIK Karyawan', 'Nominal'/'Jumlah', 'Keterangan'/'Ket').
+
+    Mengembalikan (baris_valid, nik_tidak_ditemukan) di mana baris_valid adalah
+    list of (karyawan, nominal, keterangan).
+    """
+    baris_list = baca_baris_file(file_storage)
+
+    peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
+
+    baris_valid = []
+    nik_tidak_ditemukan = []
+
+    for baris in baris_list:
+        nik = str(
+            baris.get("NIK") or baris.get("NIK Karyawan") or baris.get("nik") or ""
+        ).strip()
+        if not nik:
+            continue
+        nominal = _ke_desimal(baris.get("Nominal") or baris.get("Jumlah") or baris.get("nominal"))
+        keterangan = str(
+            baris.get("Keterangan") or baris.get("Ket") or baris.get("keterangan") or ""
+        ).strip()
+
+        karyawan = peta_karyawan.get(nik.lower())
+        if karyawan is None:
+            nik_tidak_ditemukan.append(nik)
+            continue
+        baris_valid.append((karyawan, nominal, keterangan))
+
+    return baris_valid, nik_tidak_ditemukan
+
+
+def parse_template_reward(file_storage):
+    """Parse template reward: kolom NIK, Jenis Reward, Nominal, Keterangan.
+
+    Mengembalikan (baris_valid, masalah) di mana baris_valid adalah
+    list of (karyawan, jenis_reward, nominal, keterangan), dan masalah adalah
+    list string berisi NIK tidak ditemukan / jenis reward tidak dikenal.
+    """
+    baris_list = baca_baris_file(file_storage)
+
+    peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
+    peta_jenis = {j.nama.strip().lower(): j for j in JenisReward.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for baris in baris_list:
+        nik = str(baris.get("NIK") or baris.get("NIK Karyawan") or "").strip()
+        if not nik:
+            continue
+        nama_jenis = str(baris.get("Jenis Reward") or baris.get("Jenis") or "").strip()
+        nominal = _ke_desimal(baris.get("Nominal") or baris.get("Jumlah"))
+        keterangan = str(baris.get("Keterangan") or baris.get("Ket") or "").strip()
+
+        karyawan = peta_karyawan.get(nik.lower())
+        if karyawan is None:
+            masalah.append(f"NIK '{nik}' tidak ditemukan")
+            continue
+
+        jenis_reward = peta_jenis.get(nama_jenis.lower())
+        if jenis_reward is None:
+            masalah.append(f"Jenis reward '{nama_jenis}' (baris NIK {nik}) tidak dikenal, tambahkan dulu di master jenis reward")
+            continue
+
+        baris_valid.append((karyawan, jenis_reward, nominal, keterangan))
+
+    return baris_valid, masalah
+
+
+def _ke_tanggal(nilai):
+    if not nilai:
+        return None
+    if hasattr(nilai, "date"):
+        return nilai.date() if hasattr(nilai, "hour") else nilai
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(str(nilai).strip(), fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def parse_template_prediksi_berita_acara(file_storage):
+    """Template dari tim: AWB, NIK Karyawan, Nominal, Reason Claim, Tanggal, Keterangan.
+
+    Mengembalikan (baris_valid, masalah). baris_valid = list of dict dengan key
+    awb, karyawan, nominal, reason_claim, tanggal, keterangan.
+    """
+    baris_list = baca_baris_file(file_storage)
+    peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
+    peta_reason = {r.nama.strip().lower(): r for r in ReasonClaim.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for baris in baris_list:
+        awb = str(baris.get("AWB") or "").strip()
+        if not awb:
+            continue
+        nik = str(baris.get("NIK Karyawan") or baris.get("NIK") or "").strip()
+        karyawan = peta_karyawan.get(nik.lower())
+        if karyawan is None:
+            masalah.append(f"AWB {awb}: NIK '{nik}' tidak ditemukan")
+            continue
+
+        nama_reason = str(baris.get("Reason Claim") or "").strip()
+        reason = peta_reason.get(nama_reason.lower())
+        if reason is None:
+            masalah.append(f"AWB {awb}: Reason Claim '{nama_reason}' tidak dikenal, tambahkan dulu di master")
+            continue
+
+        baris_valid.append(
+            {
+                "awb": awb,
+                "karyawan": karyawan,
+                "nominal": _ke_desimal(baris.get("Nominal")),
+                "reason_claim": reason,
+                "tanggal": _ke_tanggal(baris.get("Tanggal")),
+                "keterangan": str(baris.get("Keterangan") or "").strip(),
+            }
+        )
+
+    return baris_valid, masalah
+
+
+def parse_template_pusat_berita_acara(file_storage):
+    """Template dari pusat (konfirmasi HQ J&T): Periode, Tahun, Jenis Ecommerce, AWB,
+    Lokasi Tertagih, Nilai Claim, Mitra, Region, RM, Status Bayar, Keterangan, Reason Claim.
+
+    Mengembalikan (baris_valid, masalah). baris_valid = list of dict mentah per kolom.
+    """
+    baris_list = baca_baris_file(file_storage)
+    peta_reason = {r.nama.strip().lower(): r for r in ReasonClaim.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for baris in baris_list:
+        awb = str(baris.get("AWB") or "").strip()
+        if not awb:
+            continue
+
+        nama_reason = str(baris.get("Reason Claim") or "").strip()
+        reason = peta_reason.get(nama_reason.lower()) if nama_reason else None
+        if nama_reason and reason is None:
+            masalah.append(f"AWB {awb}: Reason Claim '{nama_reason}' tidak dikenal (dibiarkan kosong)")
+
+        baris_valid.append(
+            {
+                "awb": awb,
+                "periode_pusat": str(baris.get("Periode") or "").strip(),
+                "tahun_pusat": str(baris.get("Tahun") or "").strip(),
+                "jenis_ecommerce": str(baris.get("Jenis Ecommerce") or "").strip(),
+                "lokasi_tertagih": str(baris.get("Lokasi Tertagih") or "").strip(),
+                "nominal_pusat": _ke_desimal(baris.get("Nilai Claim")),
+                "mitra": str(baris.get("Mitra") or "").strip(),
+                "region": str(baris.get("Region") or "").strip(),
+                "rm": str(baris.get("RM") or "").strip(),
+                "status_bayar": str(baris.get("Status Bayar") or "").strip(),
+                "keterangan_pusat": str(baris.get("Keterangan") or "").strip(),
+                "reason_claim": reason,
+            }
+        )
+
+    return baris_valid, masalah

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Payroll{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Periode Payroll</h4>
+  {% if level_akses_user('payroll') in ['edit', 'approve'] %}
+  <a href="{{ url_for('payroll.tambah') }}" class="btn btn-primary btn-sm">+ Buat Periode</a>
+  {% endif %}
+</div>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th>Status</th>
+          <th>Jumlah Slip</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for periode in daftar_periode %}
+        <tr>
+          <td>{{ periode.label }}</td>
+          <td>
+            {% if periode.status == 'final' %}
+            <span class="badge bg-success">Final</span>
+            {% else %}
+            <span class="badge bg-warning text-dark">Draft</span>
+            {% endif %}
+          </td>
+          <td>{{ periode.slip_gaji_list | length }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('payroll.detail', periode_id=periode.id) }}" class="btn btn-sm btn-outline-primary">Detail</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Belum ada periode payroll.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

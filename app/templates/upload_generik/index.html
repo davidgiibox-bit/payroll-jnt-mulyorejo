@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ label }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">{{ label }}</h4>
+
+{% if level_akses_user(kode_menu) in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for(request.blueprint ~ '.unggah') }}" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          {{ form.periode_payroll_id.label(class="form-label") }}
+          {{ form.periode_payroll_id(class="form-select") }}
+        </div>
+        <div class="col-12 col-md-5">
+          {{ form.file.label(class="form-label") }}
+          {{ form.file(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </div>
+      </div>
+      <p class="text-muted small mt-2 mb-0">Format kolom: NIK, Nominal, Keterangan. Upload ulang untuk periode yang sama akan MENGGANTI total seluruh data {{ label }} periode tsb.</p>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<form method="GET" class="mb-3">
+  <div class="input-group" style="max-width: 350px;">
+    <select name="periode_id" class="form-select" onchange="this.form.submit()">
+      {% for p in daftar_periode %}
+      <option value="{{ p.id }}" {% if p.id == periode_id_dipilih %}selected{% endif %}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr>
+          <th>NIK</th>
+          <th>Nama</th>
+          <th>Nominal</th>
+          <th>Keterangan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for baris in daftar_baris %}
+        <tr>
+          <td>{{ baris.karyawan.nik_karyawan }}</td>
+          <td>{{ baris.karyawan.nama }}</td>
+          <td>Rp {{ "{:,.0f}".format(baris.nominal).replace(",", ".") }}</td>
+          <td>{{ baris.keterangan or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Belum ada data untuk periode ini.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

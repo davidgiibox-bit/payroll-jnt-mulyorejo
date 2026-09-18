@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Keputusan Kasus {{ kasus.awb }}{% endblock %}
+{% block content %}
+<h4 class="mb-3">Keputusan Potongan — AWB {{ kasus.awb }}</h4>
+<p class="text-muted">Karyawan: {{ kasus.karyawan.nama }} — Nominal: Rp {{ "{:,.0f}".format(kasus.nominal_final or 0).replace(",", ".") }}</p>
+
+<div class="card shadow-sm" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.keputusan.label(class="form-label") }}
+        {{ form.keputusan(class="form-select") }}
+      </div>
+      <div class="mb-3">
+        {{ form.jumlah_bulan.label(class="form-label") }}
+        {{ form.jumlah_bulan(class="form-control") }}
+        <div class="form-text">Hanya dipakai kalau keputusan = Cicil.</div>
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('berita_acara.review') }}" class="btn btn-outline-secondary">Batal</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

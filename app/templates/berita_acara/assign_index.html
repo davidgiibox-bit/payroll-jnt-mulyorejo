@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Perlu Assignment{% endblock %}
+{% block content %}
+<h4 class="mb-3">Kasus Perlu Assignment Manual</h4>
+<p class="text-muted">Kasus dari data pusat yang tidak pernah ada prediksinya — perlu ditentukan karyawan yang bertanggung jawab.</p>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>AWB</th><th>Nilai Claim</th><th>Mitra</th><th>Region</th><th></th></tr></thead>
+      <tbody>
+        {% for kasus in daftar %}
+        <tr>
+          <td>{{ kasus.awb }}</td>
+          <td>Rp {{ "{:,.0f}".format(kasus.nominal_pusat or 0).replace(",", ".") }}</td>
+          <td>{{ kasus.mitra or '-' }}</td>
+          <td>{{ kasus.region or '-' }}</td>
+          <td class="text-end">
+            <a href="{{ url_for('berita_acara.assign_kasus', kasus_id=kasus.id) }}" class="btn btn-sm btn-primary">Assign</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada kasus yang perlu assignment.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

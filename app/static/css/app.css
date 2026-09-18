@@ -1,0 +1,18 @@
+body {
+  background-color: #f5f6f8;
+}
+
+.navbar-brand {
+  font-weight: 600;
+}
+
+.table-responsive {
+  overflow-x: auto;
+}
+
+@media (max-width: 576px) {
+  .container-fluid {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}

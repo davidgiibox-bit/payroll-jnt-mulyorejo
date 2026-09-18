@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ event.deskripsi }}{% endblock %}
+{% block content %}
+<h4 class="mb-1">{{ event.deskripsi }}</h4>
+<p class="text-muted">{{ event.periode.label }} — Total biaya: Rp {{ "{:,.0f}".format(event.total_biaya).replace(",", ".") }} — Teralokasi: Rp {{ "{:,.0f}".format(total_teralokasi).replace(",", ".") }}</p>
+
+{% if level_akses_user('reward') in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3" style="max-width: 600px;">
+  <div class="card-body">
+    <h6>Tambah Peserta</h6>
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          {{ form.karyawan_id.label(class="form-label") }}
+          {{ form.karyawan_id(class="form-select") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.nominal.label(class="form-label") }}
+          {{ form.nominal(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.keterangan.label(class="form-label") }}
+          {{ form.keterangan(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-2">
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>Karyawan</th><th>Nominal</th><th>Keterangan</th><th></th></tr></thead>
+      <tbody>
+        {% for peserta in event.peserta_list %}
+        <tr>
+          <td>{{ peserta.karyawan.nama }}</td>
+          <td>Rp {{ "{:,.0f}".format(peserta.nominal).replace(",", ".") }}</td>
+          <td>{{ peserta.keterangan or '-' }}</td>
+          <td class="text-end">
+            {% if level_akses_user('reward') in ['edit', 'approve'] %}
+            <form action="{{ url_for('reward.entertainment_hapus_peserta', event_id=event.id, peserta_id=peserta.id) }}" method="POST" onsubmit="return confirm('Hapus peserta ini?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-4">Belum ada peserta.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

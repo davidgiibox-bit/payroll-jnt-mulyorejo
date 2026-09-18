@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Berita Acara{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0">Berita Acara & Cicilan</h4>
+  <div>
+    <a href="{{ url_for('berita_acara.reason_index') }}" class="btn btn-sm btn-outline-secondary">Master Reason</a>
+    {% if level_akses_user('berita_acara') in ['edit', 'approve'] %}
+    <a href="{{ url_for('berita_acara.upload_prediksi') }}" class="btn btn-sm btn-outline-primary">Upload Prediksi</a>
+    <a href="{{ url_for('berita_acara.upload_pusat') }}" class="btn btn-sm btn-outline-primary">Upload Pusat</a>
+    <a href="{{ url_for('berita_acara.assign_index') }}" class="btn btn-sm btn-outline-warning">Perlu Assignment</a>
+    {% endif %}
+    <a href="{{ url_for('berita_acara.review') }}" class="btn btn-sm btn-success">Review Sebelum Final</a>
+  </div>
+</div>
+
+<form method="GET" class="mb-3">
+  <select name="status" class="form-select" style="max-width: 300px;" onchange="this.form.submit()">
+    <option value="">Semua Status</option>
+    <option value="prediksi" {% if status_filter == 'prediksi' %}selected{% endif %}>Prediksi</option>
+    <option value="menunggu_konfirmasi_pusat" {% if status_filter == 'menunggu_konfirmasi_pusat' %}selected{% endif %}>Menunggu Konfirmasi Pusat</option>
+    <option value="final" {% if status_filter == 'final' %}selected{% endif %}>Final</option>
+  </select>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr><th>AWB</th><th>Karyawan</th><th>Status</th><th>Nominal</th><th>Keputusan</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for kasus in daftar_kasus %}
+        <tr>
+          <td>{{ kasus.awb }}</td>
+          <td>{{ kasus.karyawan.nama if kasus.karyawan else '(belum di-assign)' }}</td>
+          <td>
+            {% if kasus.status == 'final' %}<span class="badge bg-success">Final</span>
+            {% elif kasus.status == 'menunggu_konfirmasi_pusat' %}<span class="badge bg-warning text-dark">Menunggu Konfirmasi</span>
+            {% else %}<span class="badge bg-secondary">Prediksi</span>{% endif %}
+          </td>
+          <td>Rp {{ "{:,.0f}".format(kasus.nominal_final or 0).replace(",", ".") }}</td>
+          <td>{{ kasus.keputusan or '-' }}{% if kasus.keputusan == 'cicil' %} ({{ kasus.jumlah_bulan_cicilan }}x){% endif %}</td>
+          <td class="text-end">
+            {% if kasus.karyawan_id and not kasus.sudah_diterapkan and level_akses_user('berita_acara') in ['edit', 'approve'] %}
+            <a href="{{ url_for('berita_acara.ubah_keputusan', kasus_id=kasus.id) }}" class="btn btn-sm btn-outline-secondary">Ubah Keputusan</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada kasus.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

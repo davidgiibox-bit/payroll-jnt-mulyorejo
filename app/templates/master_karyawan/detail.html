@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ karyawan.nama }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0">{{ karyawan.nama }}</h4>
+  <div>
+    {% if level_akses_user('master_karyawan') in ['edit', 'approve'] %}
+    <a href="{{ url_for('master_karyawan.edit', karyawan_id=karyawan.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+    {% endif %}
+    <a href="{{ url_for('master_karyawan.index') }}" class="btn btn-sm btn-outline-secondary">Kembali</a>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-12 col-md-6">
+        <table class="table table-borderless table-sm mb-0">
+          <tr><th style="width:45%;">NIK Karyawan</th><td>{{ karyawan.nik_karyawan }}</td></tr>
+          <tr><th>Jabatan</th><td>{{ karyawan.jabatan.nama }}</td></tr>
+          <tr><th>Kode DP</th><td>{{ karyawan.kode_dp }}</td></tr>
+          <tr><th>Jenis Kelamin</th><td>{{ karyawan.jenis_kelamin or '-' }}</td></tr>
+          <tr><th>Status Pajak</th><td>{{ karyawan.status_pajak or '-' }}</td></tr>
+          <tr><th>Tanggal Join</th><td>{{ karyawan.tanggal_join or '-' }}</td></tr>
+          <tr><th>Tanggal Resign</th><td>{{ karyawan.tanggal_resign or '-' }}</td></tr>
+          <tr><th>Status</th><td>{{ 'Aktif' if karyawan.status_aktif else 'Tidak Aktif' }}</td></tr>
+        </table>
+      </div>
+      <div class="col-12 col-md-6">
+        <table class="table table-borderless table-sm mb-0">
+          <tr><th style="width:45%;">NPWP</th><td>{{ karyawan.npwp or '-' }}</td></tr>
+          <tr><th>NIK KTP</th><td>{{ karyawan.nik_ktp or '-' }}</td></tr>
+          <tr><th>Rekening Bank</th><td>{{ karyawan.rekening_bank or '-' }}</td></tr>
+          <tr><th>Alamat NPWP</th><td>{{ karyawan.alamat_npwp or '-' }}</td></tr>
+          <tr><th>Limit Deposit Individual</th><td>{{ karyawan.limit_deposit_individual if karyawan.limit_deposit_individual is not none else 'Default global' }}</td></tr>
+          <tr><th>Potongan BPJS-TK</th><td>Rp {{ "{:,.0f}".format(karyawan.potongan_bpjs_tk).replace(",", ".") }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

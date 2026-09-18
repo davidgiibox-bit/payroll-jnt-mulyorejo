@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}PHL{% endblock %}
+{% block content %}
+<h4 class="mb-3">PHL — Pekerja Harian Lepas</h4>
+
+<form method="GET" class="mb-3">
+  <div class="input-group" style="max-width: 350px;">
+    <select name="periode_id" class="form-select" onchange="this.form.submit()">
+      {% for p in daftar_periode %}
+      <option value="{{ p.id }}" {% if p.id == periode_id_dipilih %}selected{% endif %}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+{% if periode_id_dipilih %}
+{% if level_akses_user('phl') in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3" style="max-width: 500px;">
+  <div class="card-body">
+    <h6>Total Biaya & Paket</h6>
+    <form method="POST" action="{{ url_for('phl.simpan_total', periode_id=periode_id_dipilih) }}">
+      {{ form_total.hidden_tag() }}
+      <div class="mb-2">
+        {{ form_total.total_biaya.label(class="form-label") }}
+        {{ form_total.total_biaya(class="form-control") }}
+      </div>
+      <div class="mb-2">
+        {{ form_total.total_paket.label(class="form-label") }}
+        {{ form_total.total_paket(class="form-control") }}
+      </div>
+      {{ form_total.submit(class="btn btn-primary btn-sm") }}
+    </form>
+  </div>
+</div>
+{% endif %}
+
+{% if phl_periode %}
+<p class="text-muted">Biaya per paket: Rp {{ "{:,.2f}".format(phl_periode.biaya_per_paket).replace(",", ".") }}</p>
+
+<form method="POST" action="{{ url_for('phl.simpan_resi', periode_id=periode_id_dipilih) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead><tr><th>NIK</th><th>Nama</th><th>Jabatan</th><th>Jumlah Resi</th><th>Potongan</th></tr></thead>
+        <tbody>
+          {% for karyawan in daftar_karyawan_phl %}
+          <tr>
+            <td>{{ karyawan.nik_karyawan }}</td>
+            <td>{{ karyawan.nama }}</td>
+            <td>{{ karyawan.jabatan.nama }}</td>
+            <td style="max-width:120px;">
+              {% if level_akses_user('phl') in ['edit', 'approve'] %}
+              <input type="number" min="0" class="form-control form-control-sm" name="resi_{{ karyawan.id }}" value="{{ peta_resi.get(karyawan.id, 0) }}">
+              {% else %}
+              {{ peta_resi.get(karyawan.id, 0) }}
+              {% endif %}
+            </td>
+            <td>Rp {{ "{:,.0f}".format(phl_periode.biaya_per_paket * peta_resi.get(karyawan.id, 0)).replace(",", ".") }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">Belum ada jabatan yang ditandai "Kena PHL" (atur di Data Jabatan).</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if level_akses_user('phl') in ['edit', 'approve'] and daftar_karyawan_phl %}
+  <button type="submit" class="btn btn-primary mt-3">Simpan Jumlah Resi</button>
+  {% endif %}
+</form>
+{% else %}
+<p class="text-muted">Isi total biaya & total paket dulu untuk periode ini.</p>
+{% endif %}
+{% endif %}
+{% endblock %}

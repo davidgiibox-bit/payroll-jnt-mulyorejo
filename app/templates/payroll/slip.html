@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Slip Gaji — {{ slip.karyawan.nama }}{% endblock %}
+{% macro baris(label, nominal, tanda='-') %}
+<tr>
+  <td>{{ label }}</td>
+  <td class="text-end">{{ tanda }} Rp {{ "{:,.0f}".format(nominal).replace(",", ".") }}</td>
+</tr>
+{% endmacro %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Slip Gaji — {{ slip.karyawan.nama }}</h4>
+  <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">Kembali</a>
+</div>
+<p class="text-muted">{{ slip.periode.label }} — {{ slip.karyawan.jabatan.nama }} ({{ slip.karyawan.kode_dp }})</p>
+
+<div class="card shadow-sm" style="max-width: 600px;">
+  <div class="card-body">
+    <h6 class="text-muted">Penghasilan</h6>
+    <table class="table table-sm mb-3">
+      {{ baris("Gaji Pokok", slip.gaji_pokok_snapshot, "+") }}
+      {{ baris("Tunjangan Masa Kerja", slip.tunjangan_masa_kerja_snapshot, "+") }}
+      {{ baris("Insentif", slip.insentif, "+") }}
+      {{ baris("THR", slip.thr, "+") }}
+    </table>
+
+    <h6 class="text-muted">Potongan (Sebelum THP)</h6>
+    <table class="table table-sm mb-3">
+      {{ baris("Potongan Deposit", slip.potongan_deposit) }}
+      {{ baris("Potongan Kehadiran", slip.potongan_kehadiran) }}
+      {{ baris("Potongan Terlambat", slip.potongan_terlambat) }}
+      {{ baris("Potongan Lainnya", slip.potongan_lainnya) }}
+      {{ baris("Potongan PPh21", slip.potongan_pph21) }}
+      {{ baris("Potongan BPJS-TK", slip.potongan_bpjs_tk) }}
+    </table>
+
+    <div class="d-flex justify-content-between fw-bold border-top border-bottom py-2 mb-3">
+      <span>Take Home Pay (THP)</span>
+      <span>Rp {{ "{:,.0f}".format(slip.subtotal_thp).replace(",", ".") }}</span>
+    </div>
+
+    <h6 class="text-muted">Penambahan / Potongan Sesudah THP</h6>
+    <table class="table table-sm mb-3">
+      {{ baris("Reward", slip.reward, "+") }}
+      {{ baris("Potongan Reward/Entertainment", slip.potongan_reward) }}
+      {{ baris("Potongan Berita Acara / Cicilan", slip.potongan_berita_acara) }}
+      {{ baris("Potongan BBM", slip.potongan_bbm) }}
+      {{ baris("Potongan PHL", slip.potongan_phl) }}
+    </table>
+
+    <div class="d-flex justify-content-between fs-5 fw-bold">
+      <span>Total Diterima</span>
+      <span>Rp {{ "{:,.0f}".format(slip.total_akhir).replace(",", ".") }}</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

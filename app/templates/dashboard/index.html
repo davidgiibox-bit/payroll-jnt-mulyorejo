@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h3>Selamat datang, {{ karyawan.nama }}</h3>
+<p class="text-muted">{{ karyawan.jabatan.nama }} — {{ karyawan.kode_dp }}</p>
+
+<div class="row g-3 mt-2">
+  <div class="col-12 col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="card-title">Fase 1: Fondasi</h6>
+        <p class="card-text text-muted mb-0">Data Master, Login & Hak Akses sudah aktif. Modul absensi & perhitungan gaji menyusul di Fase 2.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

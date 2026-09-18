@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan Deposit{% endblock %}
+{% block content %}
+<h4 class="mb-3">Pengaturan Deposit Global</h4>
+{% if form.errors %}
+<div class="alert alert-danger">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+<div class="card shadow-sm" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.default_potongan_bulanan.label(class="form-label") }}
+        {{ form.default_potongan_bulanan(class="form-control") }}
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('master_deposit.index') }}" class="btn btn-outline-secondary">Batal</a>
+    </form>
+  </div>
+</div>
+{% endblock %}
