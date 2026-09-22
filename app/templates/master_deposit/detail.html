@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Deposit — {{ karyawan.nama }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Deposit — {{ karyawan.nama }}</h4>
+  <a href="{{ url_for('master_deposit.index') }}" class="btn btn-sm btn-outline-secondary">Kembali</a>
+</div>
+<p class="text-muted">
+  NIK {{ karyawan.nik_karyawan }} — Saldo Terkumpul: <strong>Rp {{ "{:,.0f}".format(deposit_saldo.saldo_terkumpul).replace(",", ".") }}</strong>
+  — Limit: <strong>Rp {{ "{:,.0f}".format(deposit_saldo.limit_efektif()).replace(",", ".") }}</strong>
+  {% if karyawan.limit_deposit_individual is none %}(default global){% else %}(individual){% endif %}
+</p>
+
+{% if level_akses_user('master_deposit') in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3" style="max-width: 600px;">
+  <div class="card-body">
+    <h6>Sesuaikan Saldo</h6>
+    <p class="text-muted small">Dipakai untuk migrasi saldo dari pencatatan manual lama, atau koreksi. Tercatat sebagai penyesuaian, bukan menimpa diam-diam.</p>
+    <form method="POST" action="{{ url_for('master_deposit.sesuaikan', karyawan_id=karyawan.id) }}">
+      {{ form.hidden_tag() }}
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          {{ form.saldo_baru.label(class="form-label") }}
+          {{ form.saldo_baru(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-5">
+          {{ form.keterangan.label(class="form-label") }}
+          {{ form.keterangan(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead>
+        <tr><th>Tanggal</th><th>Jenis</th><th>Periode</th><th>Nominal</th><th>Saldo Setelah</th><th>Keterangan</th></tr>
+      </thead>
+      <tbody>
+        {% for t in riwayat %}
+        <tr>
+          <td>{{ t.created_at.strftime("%d-%m-%Y %H:%M") }}</td>
+          <td>
+            {% if t.jenis == 'penyesuaian' %}
+            <span class="badge bg-warning text-dark">Penyesuaian</span>
+            {% else %}
+            <span class="badge bg-secondary">Otomatis</span>
+            {% endif %}
+          </td>
+          <td>{{ t.periode or '-' }}</td>
+          <td>{{ "+" if t.nominal >= 0 else "" }}Rp {{ "{:,.0f}".format(t.nominal).replace(",", ".") }}</td>
+          <td>Rp {{ "{:,.0f}".format(t.saldo_setelah).replace(",", ".") }}</td>
+          <td>{{ t.keterangan or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada riwayat transaksi.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

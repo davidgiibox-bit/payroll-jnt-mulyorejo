@@ -47,8 +47,13 @@ class DepositSaldo(db.Model):
         return PengaturanDeposit.get_current().default_limit_deposit
 
 
+JENIS_OTOMATIS = "otomatis"
+JENIS_PENYESUAIAN = "penyesuaian"
+
+
 class DepositTransaksi(db.Model):
-    """Log potongan deposit per periode payroll."""
+    """Log perubahan saldo deposit — baik potongan otomatis tiap periode payroll,
+    maupun penyesuaian manual (mis. migrasi saldo dari proses lama)."""
 
     __tablename__ = "deposit_transaksi"
 
@@ -56,11 +61,13 @@ class DepositTransaksi(db.Model):
     deposit_saldo_id = db.Column(db.Integer, db.ForeignKey("deposit_saldo.id"), nullable=False)
     deposit_saldo = db.relationship("DepositSaldo", back_populates="transaksi_list")
 
-    periode = db.Column(db.String(7), nullable=False)  # format "YYYY-MM"
-    nominal = db.Column(db.Numeric(14, 2), nullable=False)
+    periode = db.Column(db.String(7), nullable=True)  # format "YYYY-MM", kosong utk penyesuaian manual
+    jenis = db.Column(db.String(20), nullable=False, default=JENIS_OTOMATIS)
+    nominal = db.Column(db.Numeric(14, 2), nullable=False)  # bisa negatif utk penyesuaian turun
     saldo_setelah = db.Column(db.Numeric(14, 2), nullable=False)
+    keterangan = db.Column(db.String(255))
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
-        return f"<DepositTransaksi {self.periode}: {self.nominal}>"
+        return f"<DepositTransaksi {self.jenis} {self.periode}: {self.nominal}>"

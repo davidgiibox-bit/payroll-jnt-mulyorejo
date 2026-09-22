@@ -6,7 +6,8 @@ from app.models import PengaturanDeposit, DepositSaldo, Karyawan
 from app.utils.akses import butuh_akses
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT
 from app.blueprints.master_deposit import master_deposit_bp
-from app.blueprints.master_deposit.forms import PengaturanDepositForm
+from app.blueprints.master_deposit.forms import PengaturanDepositForm, SesuaikanSaldoForm
+from app.services.deposit_service import sesuaikan_saldo_deposit
 
 KODE_MENU = "master_deposit"
 
@@ -18,6 +19,36 @@ def index():
     pengaturan = PengaturanDeposit.get_current()
     daftar_saldo = DepositSaldo.query.join(Karyawan).order_by(Karyawan.nama).all()
     return render_template("master_deposit/index.html", pengaturan=pengaturan, daftar_saldo=daftar_saldo)
+
+
+@master_deposit_bp.route("/<int:karyawan_id>")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_LIHAT)
+def detail(karyawan_id):
+    karyawan = Karyawan.query.get_or_404(karyawan_id)
+    deposit_saldo = DepositSaldo.query.filter_by(karyawan_id=karyawan.id).first_or_404()
+    riwayat = sorted(deposit_saldo.transaksi_list, key=lambda t: t.created_at, reverse=True)
+    form = SesuaikanSaldoForm(saldo_baru=deposit_saldo.saldo_terkumpul)
+    return render_template(
+        "master_deposit/detail.html", karyawan=karyawan, deposit_saldo=deposit_saldo, riwayat=riwayat, form=form
+    )
+
+
+@master_deposit_bp.route("/<int:karyawan_id>/sesuaikan", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def sesuaikan(karyawan_id):
+    karyawan = Karyawan.query.get_or_404(karyawan_id)
+    deposit_saldo = DepositSaldo.query.filter_by(karyawan_id=karyawan.id).first_or_404()
+    form = SesuaikanSaldoForm()
+    if form.validate_on_submit():
+        sesuaikan_saldo_deposit(deposit_saldo, form.saldo_baru.data, form.keterangan.data.strip())
+        flash(f"Saldo deposit '{karyawan.nama}' berhasil disesuaikan menjadi Rp{form.saldo_baru.data:,.0f}.".replace(",", "."), "success")
+    else:
+        for field_name, error_list in form.errors.items():
+            for error in error_list:
+                flash(f"{field_name}: {error}", "danger")
+    return redirect(url_for("master_deposit.detail", karyawan_id=karyawan.id))
 
 
 @master_deposit_bp.route("/pengaturan", methods=["GET", "POST"])

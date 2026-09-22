@@ -71,7 +71,7 @@ def proses_potongan_deposit(karyawan, periode_payroll):
         db.session.flush()
 
     sudah_ada_transaksi = any(
-        t.periode == f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}"
+        t.periode == f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}" and t.jenis == "otomatis"
         for t in deposit_saldo.transaksi_list
     )
     if sudah_ada_transaksi:
@@ -90,6 +90,7 @@ def proses_potongan_deposit(karyawan, periode_payroll):
         DepositTransaksi(
             deposit_saldo_id=deposit_saldo.id,
             periode=f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}",
+            jenis="otomatis",
             nominal=potongan,
             saldo_setelah=deposit_saldo.saldo_terkumpul,
         )

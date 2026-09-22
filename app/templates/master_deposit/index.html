@@ -20,7 +20,9 @@
           <th>Nama</th>
           <th>Saldo Terkumpul</th>
           <th>Limit</th>
+          <th>Progres</th>
           <th>Status</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -31,15 +33,27 @@
           <td>Rp {{ "{:,.0f}".format(saldo.saldo_terkumpul).replace(",", ".") }}</td>
           <td>Rp {{ "{:,.0f}".format(saldo.limit_efektif()).replace(",", ".") }}</td>
           <td>
+            {% if saldo.limit_efektif() > 0 and saldo.saldo_terkumpul >= saldo.limit_efektif() %}
+            <span class="badge bg-success">Limit Tercapai</span>
+            {% elif saldo.limit_efektif() == 0 %}
+            <span class="badge bg-secondary">Tidak Dipotong</span>
+            {% else %}
+            <span class="badge bg-info text-dark">Berjalan</span>
+            {% endif %}
+          </td>
+          <td>
             {% if saldo.karyawan.status_aktif %}
             <span class="badge bg-success">Aktif</span>
             {% else %}
             <span class="badge bg-secondary">Non Aktif</span>
             {% endif %}
           </td>
+          <td class="text-end">
+            <a href="{{ url_for('master_deposit.detail', karyawan_id=saldo.karyawan.id) }}" class="btn btn-sm btn-outline-primary">Detail</a>
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-4">Belum ada data deposit.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-4">Belum ada data deposit.</td></tr>
         {% endfor %}
       </tbody>
     </table>
