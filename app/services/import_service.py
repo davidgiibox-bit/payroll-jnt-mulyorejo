@@ -289,3 +289,44 @@ def parse_template_karyawan(file_storage):
         )
 
     return baris_valid, masalah
+
+
+def parse_template_absensi_manual(file_storage):
+    """Template import Input Absensi Manual. Kolom: NIK, Sakit, Izin, Alpha,
+    Tidak Finger, Cuti, Off, Potongan Terlambat. Alpha + Tdk Finger dihitung otomatis
+    oleh pemanggil (tidak perlu diisi di template).
+
+    Mengembalikan (baris_valid, masalah). baris_valid = list of (karyawan, data_dict).
+    """
+    baris_list = baca_baris_file(file_storage)
+    peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for i, baris in enumerate(baris_list, start=2):
+        nik = str(baris.get("NIK") or baris.get("NIK Karyawan") or "").strip()
+        if not nik:
+            continue
+
+        karyawan = peta_karyawan.get(nik.lower())
+        if karyawan is None:
+            masalah.append(f"Baris {i}: NIK '{nik}' tidak ditemukan, dilewati.")
+            continue
+
+        baris_valid.append(
+            (
+                karyawan,
+                {
+                    "sakit": float(_ke_desimal(baris.get("Sakit"))),
+                    "izin": float(_ke_desimal(baris.get("Izin"))),
+                    "alpha": float(_ke_desimal(baris.get("Alpha"))),
+                    "tidak_finger": float(_ke_desimal(baris.get("Tidak Finger"))),
+                    "cuti": float(_ke_desimal(baris.get("Cuti"))),
+                    "off": float(_ke_desimal(baris.get("Off"))),
+                    "potongan_terlambat": float(_ke_desimal(baris.get("Potongan Terlambat"))),
+                },
+            )
+        )
+
+    return baris_valid, masalah

@@ -1,5 +1,11 @@
-from flask import render_template, redirect, url_for, flash, abort, request
+import io
+
+from flask import render_template, redirect, url_for, flash, abort, request, send_file
 from flask_login import login_required, current_user
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired, FileAllowed
+from wtforms import SubmitField
+import openpyxl
 
 from app.extensions import db
 from app.models import PeriodePayroll, SlipGaji, Karyawan
@@ -14,7 +20,18 @@ from app.services.kelengkapan_service import ambil_status_kelengkapan
 from app.services.periode_service import hapus_periode_payroll, PeriodeTidakBisaDihapus
 from app.services.payroll_engine import karyawan_berlaku_pada_periode
 from app.services.absensi_manual_service import simpan_absensi_manual
+from app.services.import_service import parse_template_absensi_manual
 from app.models import AbsensiRingkasanKaryawan
+
+KOLOM_TEMPLATE_ABSENSI_MANUAL = ["NIK", "Sakit", "Izin", "Alpha", "Tidak Finger", "Cuti", "Off", "Potongan Terlambat"]
+
+
+class ImportAbsensiManualForm(FlaskForm):
+    file = FileField(
+        "File Template (.xlsx atau .csv)",
+        validators=[FileRequired(), FileAllowed(["xlsx", "csv"], "Hanya file .xlsx atau .csv")],
+    )
+    submit = SubmitField("Import")
 
 KODE_MENU = "payroll"
 
@@ -127,6 +144,56 @@ def absensi_manual(periode_id):
         periode=periode,
         daftar_karyawan=daftar_karyawan,
         peta_ringkasan=peta_ringkasan,
+        form_import=ImportAbsensiManualForm(),
+    )
+
+
+@payroll_bp.route("/<int:periode_id>/absensi-manual/import", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def import_absensi_manual(periode_id):
+    periode = PeriodePayroll.query.get_or_404(periode_id)
+    if periode.status == STATUS_FINAL:
+        flash("Periode ini sudah final, absensi tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("payroll.detail", periode_id=periode.id))
+
+    form = ImportAbsensiManualForm()
+    if not form.validate_on_submit():
+        for field_name, error_list in form.errors.items():
+            for error in error_list:
+                flash(f"{field_name}: {error}", "danger")
+        return redirect(url_for("payroll.absensi_manual", periode_id=periode.id))
+
+    baris_valid, masalah = parse_template_absensi_manual(form.file.data)
+    if baris_valid:
+        data_per_karyawan = {karyawan.id: data for karyawan, data in baris_valid}
+        simpan_absensi_manual(periode, data_per_karyawan)
+        flash(f"{len(baris_valid)} baris absensi manual berhasil diimport & slip dihitung ulang.", "success")
+    else:
+        flash("Tidak ada baris valid yang diimport.", "warning")
+    if masalah:
+        flash("Baris dilewati: " + "; ".join(masalah), "warning")
+    return redirect(url_for("payroll.absensi_manual", periode_id=periode.id))
+
+
+@payroll_bp.route("/absensi-manual/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def download_template_absensi_manual():
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Absensi Manual"
+    sheet.append(KOLOM_TEMPLATE_ABSENSI_MANUAL)
+    sheet.append(["EMP0001", "0", "1", "2", "0", "0", "0", "30000"])
+
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return send_file(
+        buffer,
+        as_attachment=True,
+        download_name="template_absensi_manual.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 
