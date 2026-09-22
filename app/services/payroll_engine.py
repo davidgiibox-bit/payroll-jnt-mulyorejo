@@ -27,6 +27,10 @@ def karyawan_berlaku_pada_periode(karyawan, periode_payroll):
         return False
     if karyawan.tanggal_resign and karyawan.tanggal_resign < awal:
         return False
+    if not karyawan.status_aktif and not (karyawan.tanggal_resign and awal <= karyawan.tanggal_resign <= akhir):
+        # status_aktif dimatikan (tanpa tanggal resign yang jatuh di periode ini) —
+        # konsisten dengan badge Aktif/Tidak Aktif, jangan ikut diproses payroll.
+        return False
     return True
 
 

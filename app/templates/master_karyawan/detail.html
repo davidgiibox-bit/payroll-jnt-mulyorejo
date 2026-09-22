@@ -23,7 +23,7 @@
           <tr><th>Status Pajak</th><td>{{ karyawan.status_pajak or '-' }}</td></tr>
           <tr><th>Tanggal Join</th><td>{{ karyawan.tanggal_join or '-' }}</td></tr>
           <tr><th>Tanggal Resign</th><td>{{ karyawan.tanggal_resign or '-' }}</td></tr>
-          <tr><th>Status</th><td>{{ 'Aktif' if karyawan.status_aktif else 'Tidak Aktif' }}</td></tr>
+          <tr><th>Status</th><td>{{ 'Aktif' if karyawan.status_aktif_efektif else 'Tidak Aktif' }}</td></tr>
         </table>
       </div>
       <div class="col-12 col-md-6">

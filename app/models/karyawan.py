@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from app.extensions import db
 
 
@@ -39,6 +39,17 @@ class Karyawan(db.Model):
     tunjangan_transaksi_list = db.relationship(
         "TunjanganTransaksi", back_populates="karyawan", cascade="all, delete-orphan"
     )
+
+    @property
+    def status_aktif_efektif(self):
+        """Status aktif SEBENARNYA yang dipakai untuk tampilan & payroll — gabungan
+        field status_aktif DAN tanggal_resign, supaya dua-duanya tidak bisa saling
+        kontradiksi (mis. status_aktif masih True tapi tanggal_resign sudah lewat)."""
+        if not self.status_aktif:
+            return False
+        if self.tanggal_resign and self.tanggal_resign <= date.today():
+            return False
+        return True
 
     def __repr__(self):
         return f"<Karyawan {self.nik_karyawan} - {self.nama}>"
