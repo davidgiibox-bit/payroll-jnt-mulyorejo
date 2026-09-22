@@ -111,7 +111,7 @@ def ambil_potongan_terlambat_periode(periode_payroll):
     worksheet = spreadsheet.worksheet(NAMA_SHEET_KETERLAMBATAN)
     baris_list = ambil_semua_baris(worksheet)
 
-    kode_periode = f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}"
+    kode_periode = periode_payroll.kode_periode_terlambat
     hasil = {}
     for baris in baris_list:
         periode_baris = str(baris.get("Periode", "")).strip()

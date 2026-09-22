@@ -12,6 +12,7 @@
   </div>
   <div>
     {% if periode.status != 'final' and level_akses_user('payroll') in ['edit', 'approve'] %}
+    <a href="{{ url_for('payroll.pengaturan_sheet', periode_id=periode.id) }}" class="btn btn-outline-secondary btn-sm">Pengaturan Sheet</a>
     <form action="{{ url_for('payroll.proses', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tarik ulang data absensi & hitung ulang payroll periode ini?');">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-primary btn-sm">Proses / Hitung Ulang</button>
@@ -25,6 +26,8 @@
     {% endif %}
   </div>
 </div>
+
+<p class="text-muted small">Sheet absensi yang dipakai: <strong>{{ periode.nama_sheet_rekap }}</strong> — Kode periode KeterlambatanLog: <strong>{{ periode.kode_periode_terlambat }}</strong></p>
 
 <div class="card shadow-sm mb-3">
   <div class="card-body">

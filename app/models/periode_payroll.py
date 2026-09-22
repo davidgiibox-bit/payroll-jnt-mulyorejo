@@ -20,6 +20,16 @@ class PeriodePayroll(db.Model):
     tahun = db.Column(db.Integer, nullable=False)
     bulan = db.Column(db.Integer, nullable=False)  # 1-12
 
+    # Override manual nama sheet Rekap — dipakai kalau pemetaan otomatis (nama bulan
+    # periode = nama sheet) tidak sesuai, mis. karena cutoff tanggal absensi tim
+    # (21-20) belum konsisten dengan penamaan sheet. Kosongkan untuk pakai default.
+    nama_sheet_rekap_override = db.Column(db.String(100), nullable=True)
+
+    # Override manual kode periode dipakai untuk cocokkan kolom "Periode" di sheet
+    # KeterlambatanLog (formatnya "YYYY-MM"). Kosongkan untuk pakai default (tahun-bulan
+    # periode ini apa adanya).
+    kode_periode_terlambat_override = db.Column(db.String(20), nullable=True)
+
     status = db.Column(db.String(20), nullable=False, default=STATUS_DRAFT)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -40,7 +50,15 @@ class PeriodePayroll(db.Model):
 
     @property
     def nama_sheet_rekap(self):
+        if self.nama_sheet_rekap_override:
+            return self.nama_sheet_rekap_override
         return f"Rekap {self.nama_bulan} {self.tahun}"
+
+    @property
+    def kode_periode_terlambat(self):
+        if self.kode_periode_terlambat_override:
+            return self.kode_periode_terlambat_override
+        return f"{self.tahun:04d}-{self.bulan:02d}"
 
     def __repr__(self):
         return f"<PeriodePayroll {self.label} ({self.status})>"

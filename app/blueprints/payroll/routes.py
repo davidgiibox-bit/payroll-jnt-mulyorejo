@@ -7,7 +7,7 @@ from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses, punya_akses_minimal
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT, LEVEL_APPROVE
 from app.blueprints.payroll import payroll_bp
-from app.blueprints.payroll.forms import PeriodePayrollForm
+from app.blueprints.payroll.forms import PeriodePayrollForm, PengaturanSheetForm
 from app.services.payroll_engine import proses_periode_payroll
 from app.services.google_sheets_client import GoogleSheetsBelumDikonfigurasi
 from app.services.kelengkapan_service import ambil_status_kelengkapan
@@ -58,6 +58,21 @@ def detail(periode_id):
     return render_template(
         "payroll/detail.html", periode=periode, daftar_slip=daftar_slip, status_kelengkapan=status_kelengkapan
     )
+
+
+@payroll_bp.route("/<int:periode_id>/pengaturan-sheet", methods=["GET", "POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def pengaturan_sheet(periode_id):
+    periode = PeriodePayroll.query.get_or_404(periode_id)
+    form = PengaturanSheetForm(obj=periode)
+    if form.validate_on_submit():
+        periode.nama_sheet_rekap_override = form.nama_sheet_rekap_override.data.strip() or None
+        periode.kode_periode_terlambat_override = form.kode_periode_terlambat_override.data.strip() or None
+        db.session.commit()
+        flash("Pengaturan sheet berhasil disimpan.", "success")
+        return redirect(url_for("payroll.detail", periode_id=periode.id))
+    return render_template("payroll/pengaturan_sheet.html", periode=periode, form=form)
 
 
 @payroll_bp.route("/<int:periode_id>/proses", methods=["POST"])
