@@ -124,12 +124,14 @@ def finalisasi(periode_id):
 def hapus(periode_id):
     periode = PeriodePayroll.query.get_or_404(periode_id)
     try:
-        label = hapus_periode_payroll(periode)
+        label, peringatan = hapus_periode_payroll(periode)
     except PeriodeTidakBisaDihapus as e:
         flash(str(e), "danger")
         return redirect(url_for("payroll.detail", periode_id=periode.id))
 
     flash(f"Periode '{label}' berhasil dihapus, termasuk membalikkan potongan deposit & cicilan yang sudah terjadi.", "success")
+    for pesan in peringatan:
+        flash(pesan, "warning")
     return redirect(url_for("payroll.index"))
 
 

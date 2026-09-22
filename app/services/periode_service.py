@@ -28,12 +28,31 @@ def hapus_periode_payroll(periode):
     if periode.status == STATUS_FINAL:
         raise PeriodeTidakBisaDihapus("Periode yang sudah final tidak bisa dihapus.")
 
-    # 1. Balikkan potongan deposit otomatis periode ini
+    # 1. Balikkan potongan deposit otomatis periode ini — HANYA kalau potongan itu
+    # transaksi TERAKHIR untuk karyawan tsb. Kalau sudah ada transaksi/penyesuaian
+    # lain sesudahnya, saldo TIDAK disentuh otomatis (supaya tidak salah hitung),
+    # cukup dihapus baris transaksinya dan diberi peringatan untuk dicek manual.
+    peringatan = []
     kode_periode = f"{periode.tahun:04d}-{periode.bulan:02d}"
     transaksi_deposit = DepositTransaksi.query.filter_by(periode=kode_periode, jenis="otomatis").all()
     for t in transaksi_deposit:
-        t.deposit_saldo.saldo_terkumpul = Decimal(t.deposit_saldo.saldo_terkumpul) - Decimal(t.nominal)
+        deposit_saldo = t.deposit_saldo
+        ada_transaksi_setelahnya = (
+            DepositTransaksi.query.filter(
+                DepositTransaksi.deposit_saldo_id == deposit_saldo.id,
+                DepositTransaksi.id != t.id,
+                DepositTransaksi.created_at > t.created_at,
+            ).first()
+            is not None
+        )
         db.session.delete(t)
+        if ada_transaksi_setelahnya:
+            peringatan.append(
+                f"Saldo deposit {deposit_saldo.karyawan.nama} TIDAK dibalikkan otomatis karena ada "
+                f"transaksi/penyesuaian lain setelah potongan periode ini — cek & sesuaikan manual kalau perlu."
+            )
+        else:
+            deposit_saldo.saldo_terkumpul = Decimal(deposit_saldo.saldo_terkumpul) - Decimal(t.nominal)
 
     # 2. Balikkan potongan Berita Acara/Cicilan periode ini
     potongan_ba_list = PotonganBeritaAcaraPeriode.query.filter_by(periode_payroll_id=periode.id).all()
@@ -59,4 +78,4 @@ def hapus_periode_payroll(periode):
     label = periode.label
     db.session.delete(periode)
     db.session.commit()
-    return label
+    return label, peringatan
