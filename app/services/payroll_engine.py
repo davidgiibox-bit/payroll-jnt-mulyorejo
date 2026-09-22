@@ -51,13 +51,21 @@ def proses_potongan_deposit(karyawan, periode_payroll):
         (t for t in deposit_saldo.transaksi_list if t.periode == kode_periode and t.jenis == "otomatis"),
         None,
     )
+    limit_efektif = Decimal(deposit_saldo.limit_efektif())
+
     if transaksi_sebelumnya is not None:
-        # Sudah pernah diproses periode ini — kembalikan nominal yang sama (bukan 0),
-        # supaya diproses ulang (mis. klik "Proses/Hitung Ulang" lagi) tidak membuat
-        # potongan_deposit di slip jadi hilang, dan tidak memotong dobel.
+        if limit_efektif <= 0:
+            # Limit karyawan ini SEKARANG 0 (tidak boleh dipotong sama sekali) — batalkan
+            # potongan periode ini yang sempat tercatat sebelum limit diubah, supaya
+            # proses ulang selalu ikut aturan terkini, bukan angka basi dari histori lama.
+            deposit_saldo.saldo_terkumpul = Decimal(deposit_saldo.saldo_terkumpul) - Decimal(transaksi_sebelumnya.nominal)
+            db.session.delete(transaksi_sebelumnya)
+            return Decimal("0")
+        # Sudah pernah diproses periode ini & limit masih berlaku — kembalikan nominal
+        # yang sama (bukan 0), supaya diproses ulang tidak membuat potongan_deposit di
+        # slip jadi hilang, dan tidak memotong dobel.
         return Decimal(transaksi_sebelumnya.nominal)
 
-    limit_efektif = Decimal(deposit_saldo.limit_efektif())
     sisa_ruang = limit_efektif - Decimal(deposit_saldo.saldo_terkumpul)
     if sisa_ruang <= 0:
         return Decimal("0")
