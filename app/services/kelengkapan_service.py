@@ -11,9 +11,7 @@ from app.models.komponen_upload import (
     JENIS_BBM,
     JENIS_PPH21,
     JENIS_THR,
-    JENIS_INSENTIF_BO_DP,
-    JENIS_INSENTIF_SPRINTER,
-    JENIS_INSENTIF_KURIR,
+    JENIS_INSENTIF,
 )
 
 
@@ -33,9 +31,7 @@ def ambil_status_kelengkapan(periode):
         {"label": "BBM", "jumlah": jumlah_upload(JENIS_BBM)},
         {"label": "PPh21", "jumlah": jumlah_upload(JENIS_PPH21)},
         {"label": "THR", "jumlah": jumlah_upload(JENIS_THR)},
-        {"label": "Insentif BO DP", "jumlah": jumlah_upload(JENIS_INSENTIF_BO_DP)},
-        {"label": "Insentif Sprinter", "jumlah": jumlah_upload(JENIS_INSENTIF_SPRINTER)},
-        {"label": "Insentif Kurir", "jumlah": jumlah_upload(JENIS_INSENTIF_KURIR)},
+        {"label": "Insentif", "jumlah": jumlah_upload(JENIS_INSENTIF)},
         {
             "label": "Reward",
             "jumlah": RewardEntry.query.filter_by(

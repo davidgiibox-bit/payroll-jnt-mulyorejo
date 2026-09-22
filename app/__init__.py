@@ -34,9 +34,7 @@ def create_app(config_class=Config):
         JENIS_BBM,
         JENIS_PPH21,
         JENIS_THR,
-        JENIS_INSENTIF_BO_DP,
-        JENIS_INSENTIF_SPRINTER,
-        JENIS_INSENTIF_KURIR,
+        JENIS_INSENTIF,
     )
 
     daftar_blueprint_upload = [
@@ -44,9 +42,7 @@ def create_app(config_class=Config):
         buat_blueprint_upload("bbm", "upload_bbm", "Potongan BBM", JENIS_BBM, "potongan"),
         buat_blueprint_upload("pph21", "upload_pph21", "Potongan PPh21", JENIS_PPH21, "potongan"),
         buat_blueprint_upload("thr", "upload_thr", "THR", JENIS_THR, "tambah"),
-        buat_blueprint_upload("insentif-bo-dp", "upload_insentif_bo_dp", "Insentif BO DP", JENIS_INSENTIF_BO_DP, "tambah"),
-        buat_blueprint_upload("insentif-sprinter", "upload_insentif_sprinter", "Insentif Sprinter", JENIS_INSENTIF_SPRINTER, "tambah"),
-        buat_blueprint_upload("insentif-kurir", "upload_insentif_kurir", "Insentif Kurir", JENIS_INSENTIF_KURIR, "tambah"),
+        buat_blueprint_upload("insentif", "upload_insentif", "Insentif", JENIS_INSENTIF, "tambah"),
     ]
 
     app.register_blueprint(auth_bp)

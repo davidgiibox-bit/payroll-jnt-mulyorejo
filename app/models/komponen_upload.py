@@ -5,18 +5,14 @@ JENIS_POTONGAN_LAINNYA = "potongan_lainnya"
 JENIS_BBM = "bbm"
 JENIS_PPH21 = "pph21"
 JENIS_THR = "thr"
-JENIS_INSENTIF_BO_DP = "insentif_bo_dp"
-JENIS_INSENTIF_SPRINTER = "insentif_sprinter"
-JENIS_INSENTIF_KURIR = "insentif_kurir"
+JENIS_INSENTIF = "insentif"
 
 SEMUA_JENIS = [
     JENIS_POTONGAN_LAINNYA,
     JENIS_BBM,
     JENIS_PPH21,
     JENIS_THR,
-    JENIS_INSENTIF_BO_DP,
-    JENIS_INSENTIF_SPRINTER,
-    JENIS_INSENTIF_KURIR,
+    JENIS_INSENTIF,
 ]
 
 # Field SlipGaji yang diisi dari total per jenis (setelah dijumlah per karyawan per periode)
@@ -25,9 +21,7 @@ TARGET_FIELD_SLIP = {
     JENIS_BBM: "potongan_bbm",
     JENIS_PPH21: "potongan_pph21",
     JENIS_THR: "thr",
-    JENIS_INSENTIF_BO_DP: "insentif",
-    JENIS_INSENTIF_SPRINTER: "insentif",
-    JENIS_INSENTIF_KURIR: "insentif",
+    JENIS_INSENTIF: "insentif",
 }
 
 # jenis yang menjumlahkan ke field yang sama (insentif) perlu ditangani gabungan saat recalc
