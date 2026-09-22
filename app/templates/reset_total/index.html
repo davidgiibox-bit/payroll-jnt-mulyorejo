@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Reset Total Database{% endblock %}
+{% block content %}
+<div class="alert alert-danger">
+  <h4 class="alert-heading">⚠️ Hapus SEMUA Data — Tidak Bisa Dibatalkan</h4>
+  <p class="mb-2">Aksi ini akan menghapus <strong>seluruh data di seluruh sistem</strong>, termasuk:</p>
+  <ul>
+    <li>Semua data Karyawan, Jabatan, dan Hak Akses</li>
+    <li>Semua riwayat Deposit & Tunjangan Masa Kerja</li>
+    <li>Semua periode Payroll & slip gaji yang pernah diproses</li>
+    <li>Semua data Berita Acara, Cicilan, Reward, PHL, dan komponen upload lainnya</li>
+    <li>Akun login Anda sendiri (termasuk akun ini) — akan dibuat ulang otomatis dari pengaturan env var Render</li>
+  </ul>
+  <p class="mb-0"><strong>Hanya gunakan ini kalau Anda benar-benar mau mulai uji coba dari nol.</strong> Untuk operasional sehari-hari, jangan pernah pakai halaman ini.</p>
+</div>
+
+{% if form.errors %}
+<div class="alert alert-warning">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="card shadow-sm border-danger" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <div class="mb-3">
+        {{ form.konfirmasi.label(class="form-label fw-bold") }}
+        {{ form.konfirmasi(class="form-control") }}
+      </div>
+      {{ form.submit(class="btn btn-danger w-100") }}
+    </form>
+  </div>
+</div>
+{% endblock %}

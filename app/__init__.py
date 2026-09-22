@@ -28,6 +28,7 @@ def create_app(config_class=Config):
     from app.blueprints.reward import reward_bp
     from app.blueprints.phl import phl_bp
     from app.blueprints.berita_acara import berita_acara_bp
+    from app.blueprints.reset_total import reset_total_bp
     from app.blueprints.upload_generik.factory import buat_blueprint_upload
     from app.models.komponen_upload import (
         JENIS_POTONGAN_LAINNYA,
@@ -55,6 +56,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reward_bp)
     app.register_blueprint(phl_bp)
     app.register_blueprint(berita_acara_bp)
+    app.register_blueprint(reset_total_bp)
     for bp in daftar_blueprint_upload:
         app.register_blueprint(bp)
 
