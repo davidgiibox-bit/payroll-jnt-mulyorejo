@@ -1,5 +1,8 @@
-from flask import render_template, redirect, url_for, flash, request
+import io
+
+from flask import render_template, redirect, url_for, flash, request, send_file
 from flask_login import login_required
+import openpyxl
 
 from app.extensions import db
 from app.models import ReasonClaim, KasusBeritaAcara, Karyawan, PeriodePayroll
@@ -16,6 +19,24 @@ from app.services.berita_acara_service import (
 )
 
 KODE_MENU = "berita_acara"
+
+KOLOM_TEMPLATE_PREDIKSI = ["AWB", "NIK Karyawan", "Nominal", "Reason Claim", "Tanggal", "Keterangan"]
+KOLOM_TEMPLATE_PUSAT = [
+    "Periode", "Tahun", "Jenis Ecommerce", "AWB", "Lokasi Tertagih", "Nilai Claim",
+    "Mitra", "Region", "RM", "Status Bayar", "Keterangan", "Reason Claim",
+]
+
+
+def _buat_file_template(kolom, contoh_baris):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Template"
+    sheet.append(kolom)
+    sheet.append(contoh_baris)
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+    return buffer
 
 
 # --- Master Reason Claim ---
@@ -83,6 +104,7 @@ def upload_prediksi():
         form=form,
         judul="Upload Template Prediksi (Tim)",
         keterangan_format="Kolom: AWB, NIK Karyawan, Nominal, Reason Claim, Tanggal, Keterangan.",
+        url_template="berita_acara.download_template_prediksi",
     )
 
 
@@ -107,6 +129,34 @@ def upload_pusat():
         form=form,
         judul="Upload Template Pusat (Konfirmasi HQ)",
         keterangan_format="Kolom: Periode, Tahun, Jenis Ecommerce, AWB, Lokasi Tertagih, Nilai Claim, Mitra, Region, RM, Status Bayar, Keterangan, Reason Claim.",
+        url_template="berita_acara.download_template_pusat",
+    )
+
+
+@berita_acara_bp.route("/upload-prediksi/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def download_template_prediksi():
+    contoh = ["JX1234567890", "JM0010001", "150000", "Salah Alamat", "2026-09-15", "Paket rusak"]
+    buffer = _buat_file_template(KOLOM_TEMPLATE_PREDIKSI, contoh)
+    return send_file(
+        buffer, as_attachment=True, download_name="template_prediksi_berita_acara.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@berita_acara_bp.route("/upload-pusat/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def download_template_pusat():
+    contoh = [
+        "September", "2026", "Shopee", "JX1234567890", "MULYOREJO", "150000",
+        "AGENT19", "JBR-PROBOLINGGO", "RM Contoh", "Belum Bayar", "Catatan", "Salah Alamat",
+    ]
+    buffer = _buat_file_template(KOLOM_TEMPLATE_PUSAT, contoh)
+    return send_file(
+        buffer, as_attachment=True, download_name="template_pusat_berita_acara.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
 

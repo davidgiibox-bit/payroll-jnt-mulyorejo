@@ -13,6 +13,9 @@
   </ul>
 </div>
 {% endif %}
+{% if url_template %}
+<a href="{{ url_for(url_template) }}" class="btn btn-sm btn-outline-secondary mb-3">Download Template Excel</a>
+{% endif %}
 <div class="card shadow-sm" style="max-width: 500px;">
   <div class="card-body">
     <form method="POST" enctype="multipart/form-data">
@@ -24,7 +27,8 @@
       {{ form.submit(class="btn btn-primary") }}
       <a href="{{ url_for('berita_acara.index') }}" class="btn btn-outline-secondary">Batal</a>
     </form>
-    <p class="text-muted small mt-3 mb-0">{{ keterangan_format }}</p>
+    <p class="text-muted small mt-3 mb-0"><strong>Nama kolom di file harus persis sama seperti di bawah ini</strong> (besar/kecil huruf & spasi berpengaruh):</p>
+    <p class="text-muted small mb-0">{{ keterangan_format }}</p>
   </div>
 </div>
 {% endblock %}
