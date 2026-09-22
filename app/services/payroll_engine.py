@@ -46,12 +46,16 @@ def proses_potongan_deposit(karyawan, periode_payroll):
         db.session.add(deposit_saldo)
         db.session.flush()
 
-    sudah_ada_transaksi = any(
-        t.periode == f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}" and t.jenis == "otomatis"
-        for t in deposit_saldo.transaksi_list
+    kode_periode = f"{periode_payroll.tahun:04d}-{periode_payroll.bulan:02d}"
+    transaksi_sebelumnya = next(
+        (t for t in deposit_saldo.transaksi_list if t.periode == kode_periode and t.jenis == "otomatis"),
+        None,
     )
-    if sudah_ada_transaksi:
-        return Decimal("0")  # potongan periode ini sudah pernah diproses sebelumnya
+    if transaksi_sebelumnya is not None:
+        # Sudah pernah diproses periode ini — kembalikan nominal yang sama (bukan 0),
+        # supaya diproses ulang (mis. klik "Proses/Hitung Ulang" lagi) tidak membuat
+        # potongan_deposit di slip jadi hilang, dan tidak memotong dobel.
+        return Decimal(transaksi_sebelumnya.nominal)
 
     limit_efektif = Decimal(deposit_saldo.limit_efektif())
     sisa_ruang = limit_efektif - Decimal(deposit_saldo.saldo_terkumpul)
@@ -74,15 +78,40 @@ def proses_potongan_deposit(karyawan, periode_payroll):
     return potongan
 
 
+def _rekap_absensi_dari_data_manual(periode_payroll):
+    """Bangun ulang rekap_absensi & potongan_terlambat_map dari AbsensiRingkasanKaryawan
+    yang sudah tersimpan (diisi manual), dipakai kalau periode.absensi_manual = True
+    supaya proses_periode_payroll TIDAK menarik/menimpa dengan data Google Sheets."""
+    rekap_absensi = {}
+    potongan_terlambat_map = {}
+    for ringkasan in periode_payroll.absensi_ringkasan_list:
+        kunci = ringkasan.karyawan.nama.strip().lower()
+        rekap_absensi[kunci] = {
+            "sakit": float(ringkasan.sakit),
+            "izin": float(ringkasan.izin),
+            "alpha": float(ringkasan.alpha),
+            "tidak_finger": float(ringkasan.tidak_finger),
+            "alpha_tdk_finger": float(ringkasan.alpha_tdk_finger),
+            "cuti": float(ringkasan.cuti),
+            "off": float(ringkasan.off),
+        }
+        potongan_terlambat_map[kunci] = float(ringkasan.potongan_terlambat)
+    return rekap_absensi, potongan_terlambat_map
+
+
 def proses_periode_payroll(periode_payroll):
-    """Proses inti Fase 2: tarik absensi dari Google Sheets, hitung potongan kehadiran,
-    potongan terlambat, potongan deposit, snapshot gaji pokok & tunjangan, lalu simpan
-    sebagai SlipGaji berstatus draft untuk semua karyawan yang berlaku pada periode ini.
+    """Proses inti Fase 2: tarik absensi dari Google Sheets (atau pakai data manual kalau
+    periode_payroll.absensi_manual = True), hitung potongan kehadiran, potongan terlambat,
+    potongan deposit, snapshot gaji pokok & tunjangan, lalu simpan sebagai SlipGaji
+    berstatus draft untuk semua karyawan yang berlaku pada periode ini.
 
     Mengembalikan dict laporan: {'diproses': [...nama...], 'tidak_ditemukan_di_sheet': [...]}.
     """
-    rekap_absensi = ambil_rekap_absensi_periode(periode_payroll)
-    potongan_terlambat_map = ambil_potongan_terlambat_periode(periode_payroll)
+    if periode_payroll.absensi_manual:
+        rekap_absensi, potongan_terlambat_map = _rekap_absensi_dari_data_manual(periode_payroll)
+    else:
+        rekap_absensi = ambil_rekap_absensi_periode(periode_payroll)
+        potongan_terlambat_map = ambil_potongan_terlambat_periode(periode_payroll)
 
     daftar_karyawan = Karyawan.query.all()
     diproses = []
@@ -95,26 +124,33 @@ def proses_periode_payroll(periode_payroll):
         kunci_nama = karyawan.nama.strip().lower()
         data_absensi = rekap_absensi.get(kunci_nama)
         if data_absensi is None:
-            tidak_ditemukan_di_sheet.append(karyawan.nama)
+            if not periode_payroll.absensi_manual:
+                tidak_ditemukan_di_sheet.append(karyawan.nama)
             data_absensi = {"sakit": 0, "izin": 0, "alpha": 0, "tidak_finger": 0, "alpha_tdk_finger": 0, "cuti": 0, "off": 0}
 
-        AbsensiRingkasanKaryawan.query.filter_by(
-            periode_payroll_id=periode_payroll.id, karyawan_id=karyawan.id
-        ).delete()
         potongan_terlambat = Decimal(str(potongan_terlambat_map.get(kunci_nama, 0)))
-        ringkasan = AbsensiRingkasanKaryawan(
-            periode_payroll_id=periode_payroll.id,
-            karyawan_id=karyawan.id,
-            sakit=data_absensi["sakit"],
-            izin=data_absensi["izin"],
-            alpha=data_absensi["alpha"],
-            tidak_finger=data_absensi["tidak_finger"],
-            alpha_tdk_finger=data_absensi["alpha_tdk_finger"],
-            cuti=data_absensi["cuti"],
-            off=data_absensi["off"],
-            potongan_terlambat=potongan_terlambat,
-        )
-        db.session.add(ringkasan)
+
+        if not periode_payroll.absensi_manual:
+            # Mode Google Sheets: hapus & tulis ulang ringkasan tiap proses.
+            # Mode manual: JANGAN dihapus/ditimpa di sini — datanya sudah disimpan
+            # apa adanya oleh halaman Input Absensi Manual.
+            AbsensiRingkasanKaryawan.query.filter_by(
+                periode_payroll_id=periode_payroll.id, karyawan_id=karyawan.id
+            ).delete()
+            db.session.add(
+                AbsensiRingkasanKaryawan(
+                    periode_payroll_id=periode_payroll.id,
+                    karyawan_id=karyawan.id,
+                    sakit=data_absensi["sakit"],
+                    izin=data_absensi["izin"],
+                    alpha=data_absensi["alpha"],
+                    tidak_finger=data_absensi["tidak_finger"],
+                    alpha_tdk_finger=data_absensi["alpha_tdk_finger"],
+                    cuti=data_absensi["cuti"],
+                    off=data_absensi["off"],
+                    potongan_terlambat=potongan_terlambat,
+                )
+            )
 
         gaji_pokok = karyawan.jabatan.gaji_pokok_default
         tunjangan = karyawan.tunjangan_masa_kerja

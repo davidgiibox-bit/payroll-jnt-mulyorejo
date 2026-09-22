@@ -13,6 +13,7 @@
   <div>
     {% if periode.status != 'final' and level_akses_user('payroll') in ['edit', 'approve'] %}
     <a href="{{ url_for('payroll.pengaturan_sheet', periode_id=periode.id) }}" class="btn btn-outline-secondary btn-sm">Pengaturan Sheet</a>
+    <a href="{{ url_for('payroll.absensi_manual', periode_id=periode.id) }}" class="btn btn-outline-secondary btn-sm">Input Absensi Manual</a>
     <form action="{{ url_for('payroll.proses', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Tarik ulang data absensi & hitung ulang payroll periode ini?');">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-primary btn-sm">Proses / Hitung Ulang</button>
@@ -31,7 +32,20 @@
   </div>
 </div>
 
-<p class="text-muted small">Sheet absensi yang dipakai: <strong>{{ periode.nama_sheet_rekap }}</strong> — Kode periode KeterlambatanLog: <strong>{{ periode.kode_periode_terlambat }}</strong></p>
+<p class="text-muted small">
+  Sumber absensi:
+  {% if periode.absensi_manual %}
+  <span class="badge bg-warning text-dark">Manual</span>
+  {% if periode.status != 'final' and level_akses_user('payroll') in ['edit', 'approve'] %}
+  <form action="{{ url_for('payroll.matikan_absensi_manual', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Kembali pakai Google Sheets untuk periode ini?');">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-link btn-sm p-0 align-baseline">(kembali pakai Google Sheets)</button>
+  </form>
+  {% endif %}
+  {% else %}
+  <span class="badge bg-secondary">Google Sheets</span> — Sheet: <strong>{{ periode.nama_sheet_rekap }}</strong>, Kode periode KeterlambatanLog: <strong>{{ periode.kode_periode_terlambat }}</strong>
+  {% endif %}
+</p>
 
 <div class="card shadow-sm mb-3">
   <div class="card-body">

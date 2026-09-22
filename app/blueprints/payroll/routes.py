@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, abort
+from flask import render_template, redirect, url_for, flash, abort, request
 from flask_login import login_required, current_user
 
 from app.extensions import db
@@ -12,6 +12,9 @@ from app.services.payroll_engine import proses_periode_payroll
 from app.services.google_sheets_client import GoogleSheetsBelumDikonfigurasi
 from app.services.kelengkapan_service import ambil_status_kelengkapan
 from app.services.periode_service import hapus_periode_payroll, PeriodeTidakBisaDihapus
+from app.services.payroll_engine import karyawan_berlaku_pada_periode
+from app.services.absensi_manual_service import simpan_absensi_manual
+from app.models import AbsensiRingkasanKaryawan
 
 KODE_MENU = "payroll"
 
@@ -74,6 +77,68 @@ def pengaturan_sheet(periode_id):
         flash("Pengaturan sheet berhasil disimpan.", "success")
         return redirect(url_for("payroll.detail", periode_id=periode.id))
     return render_template("payroll/pengaturan_sheet.html", periode=periode, form=form)
+
+
+@payroll_bp.route("/<int:periode_id>/absensi-manual", methods=["GET", "POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def absensi_manual(periode_id):
+    periode = PeriodePayroll.query.get_or_404(periode_id)
+    if periode.status == STATUS_FINAL:
+        flash("Periode ini sudah final, absensi tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("payroll.detail", periode_id=periode.id))
+
+    daftar_karyawan = [
+        k for k in Karyawan.query.order_by(Karyawan.nama).all()
+        if karyawan_berlaku_pada_periode(k, periode)
+    ]
+
+    if request.method == "POST":
+        data_per_karyawan = {}
+        for k in daftar_karyawan:
+            def ambil(field):
+                nilai = request.form.get(f"{field}_{k.id}", "0").strip()
+                try:
+                    return float(nilai.replace(",", "."))
+                except ValueError:
+                    return 0
+
+            data_per_karyawan[k.id] = {
+                "sakit": ambil("sakit"),
+                "izin": ambil("izin"),
+                "alpha": ambil("alpha"),
+                "tidak_finger": ambil("tidak_finger"),
+                "cuti": ambil("cuti"),
+                "off": ambil("off"),
+                "potongan_terlambat": ambil("terlambat"),
+            }
+
+        simpan_absensi_manual(periode, data_per_karyawan)
+        flash("Absensi manual berhasil disimpan & slip gaji dihitung ulang memakai data ini.", "success")
+        return redirect(url_for("payroll.detail", periode_id=periode.id))
+
+    peta_ringkasan = {
+        r.karyawan_id: r
+        for r in AbsensiRingkasanKaryawan.query.filter_by(periode_payroll_id=periode.id).all()
+    }
+
+    return render_template(
+        "payroll/absensi_manual.html",
+        periode=periode,
+        daftar_karyawan=daftar_karyawan,
+        peta_ringkasan=peta_ringkasan,
+    )
+
+
+@payroll_bp.route("/<int:periode_id>/absensi-manual/matikan", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def matikan_absensi_manual(periode_id):
+    periode = PeriodePayroll.query.get_or_404(periode_id)
+    periode.absensi_manual = False
+    db.session.commit()
+    flash("Periode ini kembali memakai Google Sheets. Klik 'Proses / Hitung Ulang' untuk menarik datanya.", "success")
+    return redirect(url_for("payroll.detail", periode_id=periode.id))
 
 
 @payroll_bp.route("/<int:periode_id>/proses", methods=["POST"])

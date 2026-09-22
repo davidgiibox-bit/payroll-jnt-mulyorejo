@@ -30,6 +30,10 @@ class PeriodePayroll(db.Model):
     # periode ini apa adanya).
     kode_periode_terlambat_override = db.Column(db.String(20), nullable=True)
 
+    # True kalau absensi periode ini diisi manual (bukan ditarik dari Google Sheets) —
+    # dipakai utk trial data bulan lama yang belum ada di sistem absensi/Sheets.
+    absensi_manual = db.Column(db.Boolean, nullable=False, default=False)
+
     status = db.Column(db.String(20), nullable=False, default=STATUS_DRAFT)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

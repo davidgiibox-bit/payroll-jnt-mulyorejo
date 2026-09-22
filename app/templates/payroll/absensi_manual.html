@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Input Absensi Manual — {{ periode.label }}{% endblock %}
+{% block content %}
+<h4 class="mb-1">Input Absensi Manual — {{ periode.label }}</h4>
+<p class="text-muted">
+  Dipakai kalau data absensi periode ini belum ada di Google Sheets (mis. trial data bulan lama).
+  Setelah disimpan, periode ini akan memakai data manual ini terus — bukan ditarik dari Google Sheets lagi,
+  sampai Anda hapus periode ini atau proses ulang dari halaman ini.
+  <strong>Alpha + Tdk Finger dihitung otomatis</strong> (Alpha + Tidak Finger), tidak perlu diisi terpisah.
+</p>
+
+{% if periode.absensi_manual %}
+<div class="alert alert-info">Periode ini sedang memakai <strong>absensi manual</strong>. Sumber Google Sheets tidak dipakai untuk periode ini.</div>
+{% endif %}
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0 align-middle">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th style="min-width:80px;">Sakit</th>
+            <th style="min-width:80px;">Izin</th>
+            <th style="min-width:80px;">Alpha</th>
+            <th style="min-width:100px;">Tdk Finger</th>
+            <th style="min-width:80px;">Cuti</th>
+            <th style="min-width:80px;">Off</th>
+            <th style="min-width:120px;">Potongan Terlambat</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for k in daftar_karyawan %}
+          {% set r = peta_ringkasan.get(k.id) %}
+          <tr>
+            <td>{{ k.nama }}</td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="sakit_{{ k.id }}" value="{{ r.sakit if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="izin_{{ k.id }}" value="{{ r.izin if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="alpha_{{ k.id }}" value="{{ r.alpha if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="tidak_finger_{{ k.id }}" value="{{ r.tidak_finger if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="cuti_{{ k.id }}" value="{{ r.cuti if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="off_{{ k.id }}" value="{{ r.off if r else 0 }}"></td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="terlambat_{{ k.id }}" value="{{ r.potongan_terlambat if r else 0 }}"></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">Tidak ada karyawan yang berlaku pada periode ini.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if daftar_karyawan %}
+  <button type="submit" class="btn btn-primary mt-3">Simpan & Hitung Ulang Slip</button>
+  <a href="{{ url_for('payroll.detail', periode_id=periode.id) }}" class="btn btn-outline-secondary mt-3">Batal</a>
+  {% endif %}
+</form>
+{% endblock %}
