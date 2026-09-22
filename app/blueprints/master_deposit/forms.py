@@ -20,3 +20,11 @@ class SesuaikanSaldoForm(FlaskForm):
         validators=[DataRequired()],
     )
     submit = SubmitField("Simpan Penyesuaian")
+
+
+class SesuaikanSaldoMassalForm(FlaskForm):
+    keterangan = StringField(
+        "Keterangan (mis. 'Migrasi saldo dari pencatatan manual per Sep 2026')",
+        validators=[DataRequired()],
+    )
+    submit = SubmitField("Simpan Semua Penyesuaian")

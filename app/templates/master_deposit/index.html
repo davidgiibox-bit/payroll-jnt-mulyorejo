@@ -6,6 +6,7 @@
   <div>
     <span class="text-muted me-2">Default potongan bulanan: Rp {{ "{:,.0f}".format(pengaturan.default_potongan_bulanan).replace(",", ".") }}</span>
     {% if level_akses_user('master_deposit') in ['edit', 'approve'] %}
+    <a href="{{ url_for('master_deposit.sesuaikan_massal') }}" class="btn btn-sm btn-outline-secondary">Sesuaikan Saldo Massal</a>
     <a href="{{ url_for('master_deposit.pengaturan') }}" class="btn btn-sm btn-outline-secondary">Ubah Pengaturan</a>
     {% endif %}
   </div>

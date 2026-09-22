@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Sesuaikan Saldo Deposit Massal{% endblock %}
+{% block content %}
+<h4 class="mb-3">Sesuaikan Saldo Deposit — Massal</h4>
+<p class="text-muted">Isi <strong>Saldo Baru</strong> untuk karyawan yang perlu diupdate (mis. migrasi dari pencatatan manual lama). Kosongkan baris yang tidak perlu diubah — hanya baris yang diisi & nilainya beda dari saldo saat ini yang akan tercatat sebagai penyesuaian.</p>
+
+{% if form.errors %}
+<div class="alert alert-danger">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="row g-3 align-items-end mb-3">
+    <div class="col-12 col-md-6">
+      {{ form.keterangan.label(class="form-label") }}
+      {{ form.keterangan(class="form-control") }}
+    </div>
+    <div class="col-12 col-md-3">
+      {{ form.submit(class="btn btn-primary w-100") }}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr><th>NIK</th><th>Nama</th><th>Saldo Saat Ini</th><th style="min-width:160px;">Saldo Baru</th></tr>
+        </thead>
+        <tbody>
+          {% for saldo in daftar_saldo %}
+          <tr>
+            <td>{{ saldo.karyawan.nik_karyawan }}</td>
+            <td>{{ saldo.karyawan.nama }}</td>
+            <td>Rp {{ "{:,.0f}".format(saldo.saldo_terkumpul).replace(",", ".") }}</td>
+            <td><input type="number" step="any" min="0" class="form-control form-control-sm" name="saldo_{{ saldo.id }}" placeholder="(kosongkan jika tidak berubah)"></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-center text-muted py-4">Belum ada data deposit.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if daftar_saldo %}
+  <button type="submit" class="btn btn-primary mt-3">Simpan Semua Penyesuaian</button>
+  <a href="{{ url_for('master_deposit.index') }}" class="btn btn-outline-secondary mt-3">Batal</a>
+  {% endif %}
+</form>
+{% endblock %}
