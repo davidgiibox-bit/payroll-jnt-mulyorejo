@@ -23,6 +23,10 @@
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-success btn-sm">Finalisasi</button>
     </form>
+    <form action="{{ url_for('payroll.hapus', periode_id=periode.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus periode ini beserta semua slip, komponen, dan efek sampingnya (potongan deposit & cicilan akan dibalikkan)? Tindakan ini tidak bisa dibatalkan.');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger btn-sm">Hapus Periode</button>
+    </form>
     {% endif %}
   </div>
 </div>

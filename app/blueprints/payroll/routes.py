@@ -11,6 +11,7 @@ from app.blueprints.payroll.forms import PeriodePayrollForm, PengaturanSheetForm
 from app.services.payroll_engine import proses_periode_payroll
 from app.services.google_sheets_client import GoogleSheetsBelumDikonfigurasi
 from app.services.kelengkapan_service import ambil_status_kelengkapan
+from app.services.periode_service import hapus_periode_payroll, PeriodeTidakBisaDihapus
 
 KODE_MENU = "payroll"
 
@@ -115,6 +116,21 @@ def finalisasi(periode_id):
     db.session.commit()
     flash(f"Periode '{periode.label}' berhasil difinalisasi.", "success")
     return redirect(url_for("payroll.detail", periode_id=periode.id))
+
+
+@payroll_bp.route("/<int:periode_id>/hapus", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_APPROVE)
+def hapus(periode_id):
+    periode = PeriodePayroll.query.get_or_404(periode_id)
+    try:
+        label = hapus_periode_payroll(periode)
+    except PeriodeTidakBisaDihapus as e:
+        flash(str(e), "danger")
+        return redirect(url_for("payroll.detail", periode_id=periode.id))
+
+    flash(f"Periode '{label}' berhasil dihapus, termasuk membalikkan potongan deposit & cicilan yang sudah terjadi.", "success")
+    return redirect(url_for("payroll.index"))
 
 
 @payroll_bp.route("/slip/<int:slip_id>")
