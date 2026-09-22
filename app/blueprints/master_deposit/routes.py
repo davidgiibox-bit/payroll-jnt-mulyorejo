@@ -28,6 +28,7 @@ def pengaturan():
     form = PengaturanDepositForm(obj=pengaturan_obj)
     if form.validate_on_submit():
         pengaturan_obj.default_potongan_bulanan = form.default_potongan_bulanan.data
+        pengaturan_obj.default_limit_deposit = form.default_limit_deposit.data
         db.session.commit()
         flash("Pengaturan default deposit berhasil diperbarui.", "success")
         return redirect(url_for("master_deposit.index"))

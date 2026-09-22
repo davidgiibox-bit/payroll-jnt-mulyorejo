@@ -9,13 +9,14 @@ class PengaturanDeposit(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     default_potongan_bulanan = db.Column(db.Numeric(14, 2), nullable=False, default=200000)
+    default_limit_deposit = db.Column(db.Numeric(14, 2), nullable=False, default=4100000)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     @staticmethod
     def get_current():
         pengaturan = PengaturanDeposit.query.first()
         if pengaturan is None:
-            pengaturan = PengaturanDeposit(default_potongan_bulanan=200000)
+            pengaturan = PengaturanDeposit(default_potongan_bulanan=200000, default_limit_deposit=4100000)
             db.session.add(pengaturan)
             db.session.commit()
         return pengaturan
@@ -38,10 +39,12 @@ class DepositSaldo(db.Model):
     )
 
     def limit_efektif(self):
-        """Limit deposit karyawan: pakai override individual kalau ada, kalau tidak pakai default global."""
+        """Limit deposit karyawan: pakai override individual kalau ada (termasuk 0,
+        yang berarti karyawan itu tidak dipotong sama sekali), kalau tidak pakai
+        limit default global (terpisah dari nominal potongan bulanan default)."""
         if self.karyawan.limit_deposit_individual is not None:
             return self.karyawan.limit_deposit_individual
-        return PengaturanDeposit.get_current().default_potongan_bulanan
+        return PengaturanDeposit.get_current().default_limit_deposit
 
 
 class DepositTransaksi(db.Model):

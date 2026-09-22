@@ -21,6 +21,11 @@
         {{ form.default_potongan_bulanan.label(class="form-label") }}
         {{ form.default_potongan_bulanan(class="form-control") }}
       </div>
+      <div class="mb-3">
+        {{ form.default_limit_deposit.label(class="form-label") }}
+        {{ form.default_limit_deposit(class="form-control") }}
+        <div class="form-text">Dipakai kalau karyawan tidak punya Limit Deposit Individual (dikosongkan). Isi 0 di Limit Deposit Individual karyawan kalau mau karyawan itu tidak dipotong deposit sama sekali.</div>
+      </div>
       {{ form.submit(class="btn btn-primary") }}
       <a href="{{ url_for('master_deposit.index') }}" class="btn btn-outline-secondary">Batal</a>
     </form>
