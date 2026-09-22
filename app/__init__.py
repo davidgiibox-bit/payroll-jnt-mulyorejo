@@ -22,7 +22,6 @@ def create_app(config_class=Config):
     from app.blueprints.dashboard import dashboard_bp
     from app.blueprints.master_jabatan import master_jabatan_bp
     from app.blueprints.master_karyawan import master_karyawan_bp
-    from app.blueprints.master_tunjangan import master_tunjangan_bp
     from app.blueprints.master_deposit import master_deposit_bp
     from app.blueprints.admin_akses import admin_akses_bp
     from app.blueprints.payroll import payroll_bp
@@ -54,7 +53,6 @@ def create_app(config_class=Config):
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(master_jabatan_bp)
     app.register_blueprint(master_karyawan_bp)
-    app.register_blueprint(master_tunjangan_bp)
     app.register_blueprint(master_deposit_bp)
     app.register_blueprint(admin_akses_bp)
     app.register_blueprint(payroll_bp)

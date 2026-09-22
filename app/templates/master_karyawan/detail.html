@@ -34,6 +34,7 @@
           <tr><th>Alamat NPWP</th><td>{{ karyawan.alamat_npwp or '-' }}</td></tr>
           <tr><th>Limit Deposit Individual</th><td>{{ karyawan.limit_deposit_individual if karyawan.limit_deposit_individual is not none else 'Default global' }}</td></tr>
           <tr><th>Potongan BPJS-TK</th><td>Rp {{ "{:,.0f}".format(karyawan.potongan_bpjs_tk).replace(",", ".") }}</td></tr>
+          <tr><th>Tunjangan Masa Kerja</th><td>Rp {{ "{:,.0f}".format(karyawan.tunjangan_masa_kerja).replace(",", ".") }}</td></tr>
         </table>
       </div>
     </div>

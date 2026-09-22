@@ -25,8 +25,8 @@ Dokumen ini adalah ringkasan seluruh keputusan desain yang sudah disepakati anta
 Field: status aktif/tidak aktif, tanggal join, tanggal resign, Kode DP, Nama, NIK Karyawan, Jabatan, NPWP, NIK KTP, Rekening Bank, Alamat NPWP, **Status Pajak** (TK/0, K/0, K/1, dst — untuk referensi walau PPh21 tidak dihitung sistem), Jenis kelamin, **limit deposit individual**, **potongan BPJS-TK individual** (nominal tetap per karyawan, bisa beda-beda, bukan satu angka global).
 
 ### Tunjangan Masa Kerja
-- Tabel berjenjang berdasarkan rentang masa kerja (bukan berdasarkan tanggal berlaku/expiry — nominal per jenjang statis sampai diubah manual).
-- Kenaikan tahunan ada, tapi nominalnya **di-set manual oleh tim** setiap kali (bukan formula otomatis). Perlu halaman admin untuk kelola tabel rentang + nominal.
+- **Revisi (22 Sep 2026):** BUKAN lagi tabel jenjang otomatis berdasarkan rentang masa kerja. Nominalnya **di-set manual langsung per karyawan** (field `tunjangan_masa_kerja` di Data Karyawan, sama seperti Potongan BPJS-TK) — karena kenaikan tahunan nominalnya tidak mengikuti formula/rentang yang pasti, jadi tabel jenjang tidak representatif. Tim tinggal edit angka tiap karyawan langsung kalau ada kenaikan.
+- (Desain lama yang sudah tidak dipakai: tabel berjenjang berdasarkan rentang masa kerja dengan halaman admin kelola rentang + nominal — dihapus dari sistem.)
 
 ### BPJS-TK
 - Nominal tetap **per karyawan individual** (bukan global, bukan per jabatan), field di tabel Karyawan, statis sampai diubah manual.

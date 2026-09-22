@@ -5,7 +5,6 @@ from decimal import Decimal
 from app.extensions import db
 from app.models import (
     Karyawan,
-    TunjanganMasaKerjaJenjang,
     DepositSaldo,
     DepositTransaksi,
     PengaturanDeposit,
@@ -29,29 +28,6 @@ def karyawan_berlaku_pada_periode(karyawan, periode_payroll):
     if karyawan.tanggal_resign and karyawan.tanggal_resign < awal:
         return False
     return True
-
-
-def hitung_masa_kerja_bulan(karyawan, tanggal_acuan):
-    if not karyawan.tanggal_join:
-        return 0
-    join = karyawan.tanggal_join
-    return (tanggal_acuan.year - join.year) * 12 + (tanggal_acuan.month - join.month)
-
-
-def hitung_tunjangan_masa_kerja(karyawan, tanggal_acuan):
-    masa_kerja_bulan = hitung_masa_kerja_bulan(karyawan, tanggal_acuan)
-    jenjang = (
-        TunjanganMasaKerjaJenjang.query.filter(TunjanganMasaKerjaJenjang.min_bulan <= masa_kerja_bulan)
-        .filter(
-            db.or_(
-                TunjanganMasaKerjaJenjang.max_bulan.is_(None),
-                TunjanganMasaKerjaJenjang.max_bulan >= masa_kerja_bulan,
-            )
-        )
-        .order_by(TunjanganMasaKerjaJenjang.min_bulan.desc())
-        .first()
-    )
-    return jenjang.nominal if jenjang else Decimal("0")
 
 
 def hitung_potongan_kehadiran(gaji_pokok, tunjangan, alpha_tdk_finger, izin):
@@ -105,8 +81,6 @@ def proses_periode_payroll(periode_payroll):
 
     Mengembalikan dict laporan: {'diproses': [...nama...], 'tidak_ditemukan_di_sheet': [...]}.
     """
-    _, akhir_periode = _rentang_periode(periode_payroll)
-
     rekap_absensi = ambil_rekap_absensi_periode(periode_payroll)
     potongan_terlambat_map = ambil_potongan_terlambat_periode(periode_payroll)
 
@@ -143,7 +117,7 @@ def proses_periode_payroll(periode_payroll):
         db.session.add(ringkasan)
 
         gaji_pokok = karyawan.jabatan.gaji_pokok_default
-        tunjangan = hitung_tunjangan_masa_kerja(karyawan, akhir_periode)
+        tunjangan = karyawan.tunjangan_masa_kerja
         potongan_kehadiran = hitung_potongan_kehadiran(
             gaji_pokok, tunjangan, data_absensi["alpha_tdk_finger"], data_absensi["izin"]
         )

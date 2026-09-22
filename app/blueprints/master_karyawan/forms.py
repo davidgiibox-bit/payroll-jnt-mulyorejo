@@ -44,5 +44,8 @@ class KaryawanForm(FlaskForm):
     potongan_bpjs_tk = DecimalField(
         "Potongan BPJS-TK", validators=[InputRequired(), NumberRange(min=0)], places=2, default=0
     )
+    tunjangan_masa_kerja = DecimalField(
+        "Tunjangan Masa Kerja", validators=[InputRequired(), NumberRange(min=0)], places=2, default=0
+    )
 
     submit = SubmitField("Simpan")

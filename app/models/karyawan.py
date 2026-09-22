@@ -28,6 +28,7 @@ class Karyawan(db.Model):
 
     limit_deposit_individual = db.Column(db.Numeric(14, 2), nullable=True)  # override default global
     potongan_bpjs_tk = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    tunjangan_masa_kerja = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # nominal manual, di-update tim per tahun
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -24,9 +24,6 @@
         {% if level_akses_user('master_karyawan') != 'tidak_ada' %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('master_karyawan.index') }}">Karyawan</a></li>
         {% endif %}
-        {% if level_akses_user('master_tunjangan') != 'tidak_ada' %}
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('master_tunjangan.index') }}">Tunjangan Masa Kerja</a></li>
-        {% endif %}
         {% if level_akses_user('master_deposit') != 'tidak_ada' %}
         <li class="nav-item"><a class="nav-link" href="{{ url_for('master_deposit.index') }}">Deposit</a></li>
         {% endif %}

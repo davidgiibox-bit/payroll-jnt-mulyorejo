@@ -20,7 +20,7 @@ KODE_MENU = "master_karyawan"
 KOLOM_TEMPLATE_IMPORT = [
     "Kode DP", "NIK Karyawan", "Nama", "Jabatan", "NPWP", "NIK KTP", "Rekening Bank",
     "Alamat NPWP", "Status Pajak", "Jenis Kelamin", "Tanggal Join", "Tanggal Resign",
-    "Status Aktif", "Limit Deposit Individual", "Potongan BPJS-TK",
+    "Status Aktif", "Limit Deposit Individual", "Potongan BPJS-TK", "Tunjangan Masa Kerja",
 ]
 
 
@@ -102,7 +102,7 @@ def download_template_import():
     sheet.append(KOLOM_TEMPLATE_IMPORT)
     sheet.append([
         "SUB39A", "EMP0001", "Nama Contoh", "Sprinter", "", "", "", "",
-        "TK/0", "L", "2024-01-15", "", "Ya", "", "0",
+        "TK/0", "L", "2024-01-15", "", "Ya", "", "0", "0",
     ])
 
     buffer = io.BytesIO()

@@ -284,6 +284,7 @@ def parse_template_karyawan(file_storage):
                 "status_aktif": _ke_bool_aktif(baris.get("Status Aktif")),
                 "limit_deposit_individual": limit_deposit,
                 "potongan_bpjs_tk": _ke_desimal(baris.get("Potongan BPJS-TK")),
+                "tunjangan_masa_kerja": _ke_desimal(baris.get("Tunjangan Masa Kerja")),
             }
         )
 

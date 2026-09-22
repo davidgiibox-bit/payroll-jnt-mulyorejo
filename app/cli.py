@@ -8,7 +8,6 @@ from app.models import Jabatan, Karyawan, User, Menu, DepositSaldo
 DAFTAR_MENU_AWAL = [
     ("master_jabatan", "Data Jabatan", 1),
     ("master_karyawan", "Data Karyawan", 2),
-    ("master_tunjangan", "Tunjangan Masa Kerja", 3),
     ("master_deposit", "Deposit", 4),
     ("payroll", "Payroll", 5),
     ("upload_potongan_lainnya", "Upload Potongan Lainnya", 6),
