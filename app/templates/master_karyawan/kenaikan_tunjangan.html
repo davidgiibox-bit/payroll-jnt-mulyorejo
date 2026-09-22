@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Kenaikan Tunjangan Masa Kerja{% endblock %}
+{% block content %}
+<h4 class="mb-3">Kenaikan Tunjangan Masa Kerja</h4>
+<p class="text-muted">Isi nominal kenaikan untuk karyawan yang naik tunjangannya tahun ini (kosongkan/0 kalau tidak naik). Nominal ditambahkan ke tunjangan yang sudah ada, bukan menimpa.</p>
+
+{% if form.errors %}
+<div class="alert alert-danger">
+  <ul class="mb-0">
+    {% for field_name, error_list in form.errors.items() %}
+      {% for error in error_list %}
+      <li>{{ form[field_name].label.text }}: {{ error }}</li>
+      {% endfor %}
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div class="row g-3 align-items-end mb-3">
+    <div class="col-12 col-md-6">
+      {{ form.keterangan.label(class="form-label") }}
+      {{ form.keterangan(class="form-control") }}
+    </div>
+    <div class="col-12 col-md-3">
+      {{ form.submit(class="btn btn-primary w-100") }}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr><th>NIK</th><th>Nama</th><th>Jabatan</th><th>Tunjangan Saat Ini</th><th>Kenaikan</th></tr>
+        </thead>
+        <tbody>
+          {% for karyawan in daftar_karyawan %}
+          <tr>
+            <td>{{ karyawan.nik_karyawan }}</td>
+            <td>{{ karyawan.nama }}</td>
+            <td>{{ karyawan.jabatan.nama }}</td>
+            <td>Rp {{ "{:,.0f}".format(karyawan.tunjangan_masa_kerja).replace(",", ".") }}</td>
+            <td style="max-width:150px;">
+              <input type="number" step="any" class="form-control form-control-sm" name="kenaikan_{{ karyawan.id }}" placeholder="0">
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-4">Belum ada karyawan aktif.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if daftar_karyawan %}
+  <button type="submit" class="btn btn-primary mt-3">Simpan Kenaikan</button>
+  {% endif %}
+</form>
+{% endblock %}

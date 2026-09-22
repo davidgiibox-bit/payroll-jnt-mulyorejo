@@ -4,7 +4,8 @@ from flask import render_template, redirect, url_for, flash, request, send_file
 from flask_login import login_required
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import SubmitField
+from wtforms import SubmitField, StringField
+from wtforms.validators import DataRequired
 import openpyxl
 
 from app.extensions import db
@@ -14,6 +15,7 @@ from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT
 from app.blueprints.master_karyawan import master_karyawan_bp
 from app.blueprints.master_karyawan.forms import KaryawanForm
 from app.services.karyawan_import_service import impor_karyawan
+from app.services.tunjangan_service import terapkan_kenaikan_massal
 
 KODE_MENU = "master_karyawan"
 
@@ -30,6 +32,11 @@ class ImportKaryawanForm(FlaskForm):
         validators=[FileRequired(), FileAllowed(["xlsx", "csv"], "Hanya file .xlsx atau .csv")],
     )
     submit = SubmitField("Import")
+
+
+class KenaikanTunjanganForm(FlaskForm):
+    keterangan = StringField("Keterangan (mis. 'Kenaikan Tahunan 2027')", validators=[DataRequired()])
+    submit = SubmitField("Simpan Kenaikan")
 
 
 def _isi_pilihan_jabatan(form):
@@ -54,7 +61,42 @@ def index():
 @butuh_akses(KODE_MENU, LEVEL_LIHAT)
 def detail(karyawan_id):
     karyawan = Karyawan.query.get_or_404(karyawan_id)
-    return render_template("master_karyawan/detail.html", karyawan=karyawan)
+    riwayat_tunjangan = sorted(karyawan.tunjangan_transaksi_list, key=lambda t: t.created_at, reverse=True)
+    return render_template("master_karyawan/detail.html", karyawan=karyawan, riwayat_tunjangan=riwayat_tunjangan)
+
+
+@master_karyawan_bp.route("/kenaikan-tunjangan", methods=["GET", "POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def kenaikan_tunjangan():
+    form = KenaikanTunjanganForm()
+    daftar_karyawan = (
+        Karyawan.query.filter_by(status_aktif=True).order_by(Karyawan.nama).all()
+    )
+
+    if form.validate_on_submit():
+        perubahan_per_karyawan = {}
+        for karyawan in daftar_karyawan:
+            nilai = request.form.get(f"kenaikan_{karyawan.id}", "").strip()
+            if not nilai:
+                continue
+            try:
+                nominal = float(nilai.replace(",", "."))
+            except ValueError:
+                continue
+            if nominal != 0:
+                perubahan_per_karyawan[karyawan] = nominal
+
+        if not perubahan_per_karyawan:
+            flash("Tidak ada kenaikan yang diisi.", "warning")
+        else:
+            jumlah = terapkan_kenaikan_massal(perubahan_per_karyawan, form.keterangan.data.strip())
+            flash(f"Kenaikan tunjangan berhasil diterapkan ke {jumlah} karyawan.", "success")
+            return redirect(url_for("master_karyawan.index"))
+
+    return render_template(
+        "master_karyawan/kenaikan_tunjangan.html", form=form, daftar_karyawan=daftar_karyawan
+    )
 
 
 @master_karyawan_bp.route("/tambah", methods=["GET", "POST"])

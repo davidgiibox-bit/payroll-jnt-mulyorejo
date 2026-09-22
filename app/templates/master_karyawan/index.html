@@ -5,6 +5,7 @@
   <h4 class="mb-0">Data Karyawan</h4>
   {% if level_akses_user('master_karyawan') in ['edit', 'approve'] %}
   <div>
+    <a href="{{ url_for('master_karyawan.kenaikan_tunjangan') }}" class="btn btn-outline-secondary btn-sm">Kenaikan Tunjangan Massal</a>
     <a href="{{ url_for('master_karyawan.import_karyawan') }}" class="btn btn-outline-primary btn-sm">Import Excel/CSV</a>
     <a href="{{ url_for('master_karyawan.tambah') }}" class="btn btn-primary btn-sm">+ Tambah Karyawan</a>
   </div>

@@ -1,5 +1,5 @@
 from app.models.jabatan import Jabatan
-from app.models.karyawan import Karyawan
+from app.models.karyawan import Karyawan, TunjanganTransaksi
 from app.models.deposit import PengaturanDeposit, DepositSaldo, DepositTransaksi
 from app.models.user import User
 from app.models.akses import Menu, HakAkses
@@ -19,6 +19,7 @@ from app.models.berita_acara import (
 __all__ = [
     "Jabatan",
     "Karyawan",
+    "TunjanganTransaksi",
     "PengaturanDeposit",
     "DepositSaldo",
     "DepositTransaksi",

@@ -36,5 +36,31 @@ class Karyawan(db.Model):
     user = db.relationship("User", back_populates="karyawan", uselist=False)
     deposit_saldo = db.relationship("DepositSaldo", back_populates="karyawan", uselist=False)
 
+    tunjangan_transaksi_list = db.relationship(
+        "TunjanganTransaksi", back_populates="karyawan", cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<Karyawan {self.nik_karyawan} - {self.nama}>"
+
+
+class TunjanganTransaksi(db.Model):
+    """Riwayat perubahan Tunjangan Masa Kerja karyawan — dicatat tiap kali ada
+    kenaikan tahunan (nominalnya beda-beda tiap karyawan & tiap tahun, di-input
+    manual oleh tim, bukan formula otomatis)."""
+
+    __tablename__ = "tunjangan_transaksi"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    karyawan_id = db.Column(db.Integer, db.ForeignKey("karyawan.id"), nullable=False)
+    karyawan = db.relationship("Karyawan", back_populates="tunjangan_transaksi_list")
+
+    nominal_perubahan = db.Column(db.Numeric(14, 2), nullable=False)  # bisa negatif utk koreksi
+    saldo_setelah = db.Column(db.Numeric(14, 2), nullable=False)
+    keterangan = db.Column(db.String(255))
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<TunjanganTransaksi karyawan={self.karyawan_id} nominal={self.nominal_perubahan}>"
