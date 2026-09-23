@@ -293,8 +293,8 @@ def parse_template_karyawan(file_storage):
 
 def parse_template_absensi_manual(file_storage):
     """Template import Input Absensi Manual. Kolom: NIK, Sakit, Izin, Alpha,
-    Tidak Finger, Cuti, Off, Potongan Terlambat. Alpha + Tdk Finger dihitung otomatis
-    oleh pemanggil (tidak perlu diisi di template).
+    Tidak Finger, Cuti, Off, Total Hari, Potongan Terlambat. Alpha + Tdk Finger dihitung
+    otomatis oleh pemanggil (tidak perlu diisi di template).
 
     Mengembalikan (baris_valid, masalah). baris_valid = list of (karyawan, data_dict).
     """
@@ -324,6 +324,7 @@ def parse_template_absensi_manual(file_storage):
                     "tidak_finger": float(_ke_desimal(baris.get("Tidak Finger"))),
                     "cuti": float(_ke_desimal(baris.get("Cuti"))),
                     "off": float(_ke_desimal(baris.get("Off"))),
+                    "total_hari": float(_ke_desimal(baris.get("Total Hari"))),
                     "potongan_terlambat": float(_ke_desimal(baris.get("Potongan Terlambat"))),
                 },
             )

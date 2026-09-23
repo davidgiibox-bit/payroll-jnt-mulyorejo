@@ -27,6 +27,7 @@ def simpan_absensi_manual(periode, data_per_karyawan):
         ringkasan.alpha_tdk_finger = ringkasan.alpha + ringkasan.tidak_finger
         ringkasan.cuti = Decimal(str(data["cuti"]))
         ringkasan.off = Decimal(str(data["off"]))
+        ringkasan.total_hari = Decimal(str(data["total_hari"]))
         ringkasan.potongan_terlambat = Decimal(str(data["potongan_terlambat"]))
 
     periode.absensi_manual = True

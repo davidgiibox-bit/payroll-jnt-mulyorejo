@@ -76,6 +76,8 @@ def ambil_rekap_absensi_periode(periode_payroll):
         "alpha_tdk_finger": _cari_kolom(header_row, "Total Alpha + Tdk Finger", "Alpha + Tdk Finger"),
         "cuti": _cari_kolom(header_row, "Cuti"),
         "off": _cari_kolom(header_row, "Off"),
+        "dinas": _cari_kolom(header_row, "Dinas"),
+        "total_hari": _cari_kolom(header_row, "Total Hari"),
     }
 
     hasil = {}
@@ -93,6 +95,8 @@ def ambil_rekap_absensi_periode(periode_payroll):
             "alpha_tdk_finger": _ke_angka(_ambil(row, kolom["alpha_tdk_finger"])),
             "cuti": _ke_angka(_ambil(row, kolom["cuti"])),
             "off": _ke_angka(_ambil(row, kolom["off"])),
+            "dinas": _ke_angka(_ambil(row, kolom["dinas"])),
+            "total_hari": _ke_angka(_ambil(row, kolom["total_hari"])),
         }
     return hasil
 

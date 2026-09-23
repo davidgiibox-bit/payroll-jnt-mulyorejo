@@ -34,11 +34,16 @@ def karyawan_berlaku_pada_periode(karyawan, periode_payroll):
     return True
 
 
-def hitung_potongan_kehadiran(gaji_pokok, tunjangan, alpha_tdk_finger, izin):
-    """Potongan Kehadiran = (GajiPokok + Tunjangan) / 25 x (Alpha+TdkFinger + Izin).
-    Sakit, Cuti, Off/Dinas TIDAK dipotong."""
-    dasar = (Decimal(gaji_pokok) + Decimal(tunjangan)) / Decimal(25)
-    return dasar * Decimal(str(alpha_tdk_finger + izin))
+def hitung_potongan_kehadiran(gaji_pokok, tunjangan, total_hari, sakit, cuti):
+    """Potongan Kehadiran = ((GajiPokok+Tunjangan)/25 x (TotalHari+Sakit+Cuti)) - (GajiPokok+Tunjangan).
+    Total Hari ditarik apa adanya dari sumber data (tim absensi sudah menghitung &
+    membatasinya, mis. maksimal 25 untuk periode penuh) - divisor SELALU tetap 25,
+    tidak diprorata. Sakit & Cuti dianggap tetap dibayar sehingga ditambahkan lagi
+    di sisi kiri supaya tidak ikut memotong."""
+    gapok_tunjangan = Decimal(gaji_pokok) + Decimal(tunjangan)
+    dasar = gapok_tunjangan / Decimal(25)
+    hari_dibayar = Decimal(str(total_hari)) + Decimal(str(sakit)) + Decimal(str(cuti))
+    return gapok_tunjangan - (dasar * hari_dibayar)
 
 
 def proses_potongan_deposit(karyawan, periode_payroll):
@@ -106,6 +111,8 @@ def _rekap_absensi_dari_data_manual(periode_payroll):
             "alpha_tdk_finger": float(ringkasan.alpha_tdk_finger),
             "cuti": float(ringkasan.cuti),
             "off": float(ringkasan.off),
+            "dinas": float(ringkasan.dinas),
+            "total_hari": float(ringkasan.total_hari),
         }
         potongan_terlambat_map[kunci] = float(ringkasan.potongan_terlambat)
     return rekap_absensi, potongan_terlambat_map
@@ -138,7 +145,10 @@ def proses_periode_payroll(periode_payroll):
         if data_absensi is None:
             if not periode_payroll.absensi_manual:
                 tidak_ditemukan_di_sheet.append(karyawan.nama)
-            data_absensi = {"sakit": 0, "izin": 0, "alpha": 0, "tidak_finger": 0, "alpha_tdk_finger": 0, "cuti": 0, "off": 0}
+            data_absensi = {
+                "sakit": 0, "izin": 0, "alpha": 0, "tidak_finger": 0, "alpha_tdk_finger": 0,
+                "cuti": 0, "off": 0, "dinas": 0, "total_hari": 0,
+            }
 
         potongan_terlambat = Decimal(str(potongan_terlambat_map.get(kunci_nama, 0)))
 
@@ -160,6 +170,8 @@ def proses_periode_payroll(periode_payroll):
                     alpha_tdk_finger=data_absensi["alpha_tdk_finger"],
                     cuti=data_absensi["cuti"],
                     off=data_absensi["off"],
+                    dinas=data_absensi["dinas"],
+                    total_hari=data_absensi["total_hari"],
                     potongan_terlambat=potongan_terlambat,
                 )
             )
@@ -167,7 +179,7 @@ def proses_periode_payroll(periode_payroll):
         gaji_pokok = karyawan.jabatan.gaji_pokok_default
         tunjangan = karyawan.tunjangan_masa_kerja
         potongan_kehadiran = hitung_potongan_kehadiran(
-            gaji_pokok, tunjangan, data_absensi["alpha_tdk_finger"], data_absensi["izin"]
+            gaji_pokok, tunjangan, data_absensi["total_hari"], data_absensi["sakit"], data_absensi["cuti"]
         )
         potongan_deposit = proses_potongan_deposit(karyawan, periode_payroll)
 

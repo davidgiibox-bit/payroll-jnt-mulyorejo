@@ -23,7 +23,7 @@ from app.services.absensi_manual_service import simpan_absensi_manual
 from app.services.import_service import parse_template_absensi_manual
 from app.models import AbsensiRingkasanKaryawan
 
-KOLOM_TEMPLATE_ABSENSI_MANUAL = ["NIK", "Sakit", "Izin", "Alpha", "Tidak Finger", "Cuti", "Off", "Potongan Terlambat"]
+KOLOM_TEMPLATE_ABSENSI_MANUAL = ["NIK", "Sakit", "Izin", "Alpha", "Tidak Finger", "Cuti", "Off", "Total Hari", "Potongan Terlambat"]
 
 
 class ImportAbsensiManualForm(FlaskForm):
@@ -127,6 +127,7 @@ def absensi_manual(periode_id):
                 "tidak_finger": ambil("tidak_finger"),
                 "cuti": ambil("cuti"),
                 "off": ambil("off"),
+                "total_hari": ambil("total_hari"),
                 "potongan_terlambat": ambil("terlambat"),
             }
 
@@ -184,7 +185,7 @@ def download_template_absensi_manual():
     sheet = workbook.active
     sheet.title = "Absensi Manual"
     sheet.append(KOLOM_TEMPLATE_ABSENSI_MANUAL)
-    sheet.append(["EMP0001", "0", "1", "2", "0", "0", "0", "30000"])
+    sheet.append(["EMP0001", "0", "1", "2", "0", "0", "0", "25", "30000"])
 
     buffer = io.BytesIO()
     workbook.save(buffer)

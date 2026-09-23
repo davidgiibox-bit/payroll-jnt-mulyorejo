@@ -27,6 +27,8 @@ class AbsensiRingkasanKaryawan(db.Model):
     alpha_tdk_finger = db.Column(db.Numeric(6, 1), nullable=False, default=0)
     cuti = db.Column(db.Numeric(6, 1), nullable=False, default=0)
     off = db.Column(db.Numeric(6, 1), nullable=False, default=0)
+    dinas = db.Column(db.Numeric(6, 1), nullable=False, default=0)
+    total_hari = db.Column(db.Numeric(6, 1), nullable=False, default=0)  # "Total Hari"/Jumlah Kehadiran
 
     potongan_terlambat = db.Column(db.Numeric(14, 2), nullable=False, default=0)
 
