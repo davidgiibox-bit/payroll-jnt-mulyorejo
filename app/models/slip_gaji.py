@@ -30,6 +30,8 @@ class SlipGaji(db.Model):
     # --- Penambahan (sebelum THP) ---
     insentif = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (g)
     thr = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (o)
+    reward = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (h) tambahan reward
+    tambahan = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # Tambahan Mitra/Lembur/KPI COD/dst
 
     # --- Potongan sebelum THP ---
     potongan_deposit = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (c)
@@ -39,9 +41,8 @@ class SlipGaji(db.Model):
     potongan_pph21 = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (m)
     potongan_bpjs_tk = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (n)
 
-    # --- Penambahan/potongan sesudah THP ---
-    reward = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (h) tambahan
-    potongan_reward = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (h) potongan, jika ada
+    # --- Potongan sesudah THP ---
+    potongan_reward = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (h) potongan reward/entertainment
     potongan_berita_acara = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (i)/(l)
     potongan_bbm = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (j)
     potongan_phl = db.Column(db.Numeric(14, 2), nullable=False, default=0)  # (k)
@@ -58,8 +59,9 @@ class SlipGaji(db.Model):
 
     _FIELD_NUMERIK = [
         "gaji_pokok_snapshot", "tunjangan_masa_kerja_snapshot", "insentif", "thr",
+        "reward", "tambahan",
         "potongan_deposit", "potongan_kehadiran", "potongan_terlambat", "potongan_lainnya",
-        "potongan_pph21", "potongan_bpjs_tk", "reward", "potongan_reward",
+        "potongan_pph21", "potongan_bpjs_tk", "potongan_reward",
         "potongan_berita_acara", "potongan_bbm", "potongan_phl",
     ]
 
@@ -73,7 +75,14 @@ class SlipGaji(db.Model):
             if getattr(self, nama_field) is None:
                 setattr(self, nama_field, 0)
 
-        penambahan_sebelum_thp = self.gaji_pokok_snapshot + self.tunjangan_masa_kerja_snapshot + self.insentif + self.thr
+        penambahan_sebelum_thp = (
+            self.gaji_pokok_snapshot
+            + self.tunjangan_masa_kerja_snapshot
+            + self.insentif
+            + self.thr
+            + self.reward
+            + self.tambahan
+        )
         potongan_sebelum_thp = (
             self.potongan_deposit
             + self.potongan_kehadiran
@@ -90,7 +99,7 @@ class SlipGaji(db.Model):
             + self.potongan_bbm
             + self.potongan_phl
         )
-        self.total_akhir = self.subtotal_thp + self.reward - potongan_sesudah_thp
+        self.total_akhir = self.subtotal_thp - potongan_sesudah_thp
 
     def __repr__(self):
         return f"<SlipGaji karyawan={self.karyawan_id} periode={self.periode_payroll_id} status={self.status}>"

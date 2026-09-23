@@ -8,6 +8,7 @@ from app.models.absensi import AbsensiRingkasanKaryawan
 from app.models.slip_gaji import SlipGaji
 from app.models.komponen_upload import KomponenUpload
 from app.models.reward import JenisReward, EntertainmentEvent, RewardEntry
+from app.models.tambahan import JenisTambahan, TambahanEntry
 from app.models.phl import PHLPeriode, PHLResiKaryawan
 from app.models.berita_acara import (
     ReasonClaim,
@@ -33,6 +34,8 @@ __all__ = [
     "JenisReward",
     "EntertainmentEvent",
     "RewardEntry",
+    "JenisTambahan",
+    "TambahanEntry",
     "PHLPeriode",
     "PHLResiKaryawan",
     "ReasonClaim",

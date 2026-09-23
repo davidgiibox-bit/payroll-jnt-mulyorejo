@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Master Jenis Tambahan{% endblock %}
+{% block content %}
+<h4 class="mb-3">Master Jenis Tambahan</h4>
+
+{% if level_akses_user('tambahan') in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3" style="max-width: 500px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('tambahan.jenis_tambah') }}">
+      {{ form.hidden_tag() }}
+      <div class="input-group">
+        {{ form.nama(class="form-control", placeholder="Nama jenis tambahan baru") }}
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm" style="max-width: 500px;">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>Nama</th><th></th></tr></thead>
+      <tbody>
+        {% for jenis in daftar_jenis %}
+        <tr>
+          <td>{{ jenis.nama }}</td>
+          <td class="text-end">
+            {% if level_akses_user('tambahan') in ['edit', 'approve'] %}
+            <form action="{{ url_for('tambahan.jenis_hapus', jenis_id=jenis.id) }}" method="POST" onsubmit="return confirm('Hapus jenis tambahan ini?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">Hapus</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="2" class="text-center text-muted py-4">Belum ada jenis tambahan.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

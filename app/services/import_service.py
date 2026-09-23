@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 import openpyxl
 
-from app.models import Karyawan, JenisReward, ReasonClaim, Jabatan
+from app.models import Karyawan, JenisReward, JenisTambahan, ReasonClaim, Jabatan
 
 
 class BarisImportError(Exception):
@@ -114,6 +114,44 @@ def parse_template_reward(file_storage):
             continue
 
         baris_valid.append((karyawan, jenis_reward, nominal, keterangan))
+
+    return baris_valid, masalah
+
+
+def parse_template_tambahan(file_storage):
+    """Parse template tambahan: kolom NIK, Jenis Tambahan, Nominal, Keterangan.
+
+    Mengembalikan (baris_valid, masalah) di mana baris_valid adalah
+    list of (karyawan, jenis_tambahan, nominal, keterangan), dan masalah adalah
+    list string berisi NIK tidak ditemukan / jenis tambahan tidak dikenal.
+    """
+    baris_list = baca_baris_file(file_storage)
+
+    peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
+    peta_jenis = {j.nama.strip().lower(): j for j in JenisTambahan.query.all()}
+
+    baris_valid = []
+    masalah = []
+
+    for baris in baris_list:
+        nik = str(baris.get("NIK") or baris.get("NIK Karyawan") or "").strip()
+        if not nik:
+            continue
+        nama_jenis = str(baris.get("Jenis Tambahan") or baris.get("Jenis") or "").strip()
+        nominal = _ke_desimal(baris.get("Nominal") or baris.get("Jumlah"))
+        keterangan = str(baris.get("Keterangan") or baris.get("Ket") or "").strip()
+
+        karyawan = peta_karyawan.get(nik.lower())
+        if karyawan is None:
+            masalah.append(f"NIK '{nik}' tidak ditemukan")
+            continue
+
+        jenis_tambahan = peta_jenis.get(nama_jenis.lower())
+        if jenis_tambahan is None:
+            masalah.append(f"Jenis tambahan '{nama_jenis}' (baris NIK {nik}) tidak dikenal, tambahkan dulu di master jenis tambahan")
+            continue
+
+        baris_valid.append((karyawan, jenis_tambahan, nominal, keterangan))
 
     return baris_valid, masalah
 

@@ -6,6 +6,32 @@
   <td class="text-end">{{ tanda }} Rp {{ "{:,.0f}".format(nominal).replace(",", ".") }}</td>
 </tr>
 {% endmacro %}
+{% macro baris_rincian(label, total, rincian, collapse_id, tanda='+') %}
+<tr>
+  <td>
+    {% if rincian %}
+    <a href="#{{ collapse_id }}" data-bs-toggle="collapse" class="text-decoration-none">{{ label }} ▾</a>
+    {% else %}
+    {{ label }}
+    {% endif %}
+  </td>
+  <td class="text-end">{{ tanda }} Rp {{ "{:,.0f}".format(total).replace(",", ".") }}</td>
+</tr>
+{% if rincian %}
+<tr class="collapse" id="{{ collapse_id }}">
+  <td colspan="2" class="p-0 border-0">
+    <table class="table table-sm mb-0 bg-light">
+      {% for nama, nominal in rincian %}
+      <tr>
+        <td class="ps-4 text-muted">{{ nama }}</td>
+        <td class="text-end text-muted">{{ tanda }} Rp {{ "{:,.0f}".format(nominal).replace(",", ".") }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </td>
+</tr>
+{% endif %}
+{% endmacro %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">Slip Gaji — {{ slip.karyawan.nama }}</h4>
@@ -21,6 +47,8 @@
       {{ baris("Tunjangan Masa Kerja", slip.tunjangan_masa_kerja_snapshot, "+") }}
       {{ baris("Insentif", slip.insentif, "+") }}
       {{ baris("THR", slip.thr, "+") }}
+      {{ baris_rincian("Reward", slip.reward, rincian_reward, "rincian-reward") }}
+      {{ baris_rincian("Tambahan", slip.tambahan, rincian_tambahan, "rincian-tambahan") }}
     </table>
 
     <h6 class="text-muted">Potongan (Sebelum THP)</h6>
@@ -38,9 +66,8 @@
       <span>Rp {{ "{:,.0f}".format(slip.subtotal_thp).replace(",", ".") }}</span>
     </div>
 
-    <h6 class="text-muted">Penambahan / Potongan Sesudah THP</h6>
+    <h6 class="text-muted">Potongan Sesudah THP</h6>
     <table class="table table-sm mb-3">
-      {{ baris("Reward", slip.reward, "+") }}
       {{ baris("Potongan Reward/Entertainment", slip.potongan_reward) }}
       {{ baris("Potongan Berita Acara / Cicilan", slip.potongan_berita_acara) }}
       {{ baris("Potongan BBM", slip.potongan_bbm) }}

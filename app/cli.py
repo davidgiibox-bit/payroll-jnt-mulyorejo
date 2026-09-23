@@ -15,6 +15,7 @@ DAFTAR_MENU_AWAL = [
     ("upload_pph21", "Upload PPh21", 8),
     ("upload_thr", "Upload THR", 9),
     ("upload_insentif", "Upload Insentif", 10),
+    ("tambahan", "Tambahan", 12),
     ("reward", "Reward & Entertainment", 13),
     ("phl", "PHL", 14),
     ("berita_acara", "Berita Acara & Cicilan", 15),

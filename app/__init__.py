@@ -26,6 +26,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin_akses import admin_akses_bp
     from app.blueprints.payroll import payroll_bp
     from app.blueprints.reward import reward_bp
+    from app.blueprints.tambahan import tambahan_bp
     from app.blueprints.phl import phl_bp
     from app.blueprints.berita_acara import berita_acara_bp
     from app.blueprints.reset_total import reset_total_bp
@@ -54,6 +55,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_akses_bp)
     app.register_blueprint(payroll_bp)
     app.register_blueprint(reward_bp)
+    app.register_blueprint(tambahan_bp)
     app.register_blueprint(phl_bp)
     app.register_blueprint(berita_acara_bp)
     app.register_blueprint(reset_total_bp)

@@ -8,7 +8,7 @@ from wtforms import SubmitField
 import openpyxl
 
 from app.extensions import db
-from app.models import PeriodePayroll, SlipGaji, Karyawan
+from app.models import PeriodePayroll, SlipGaji, Karyawan, JenisReward, RewardEntry, JenisTambahan, TambahanEntry
 from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses, punya_akses_minimal
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT, LEVEL_APPROVE
@@ -275,7 +275,43 @@ def lihat_slip(slip_id):
     adalah_milik_sendiri = slip.karyawan_id == current_user.karyawan_id
     if not adalah_milik_sendiri and not punya_akses_minimal(KODE_MENU, LEVEL_LIHAT):
         abort(403)
-    return render_template("payroll/slip.html", slip=slip)
+
+    rincian_reward = (
+        db.session.query(JenisReward.nama, db.func.sum(RewardEntry.nominal))
+        .join(RewardEntry, RewardEntry.jenis_reward_id == JenisReward.id)
+        .filter(
+            RewardEntry.periode_payroll_id == slip.periode_payroll_id,
+            RewardEntry.karyawan_id == slip.karyawan_id,
+        )
+        .group_by(JenisReward.nama)
+        .all()
+    )
+    rincian_entertainment_total = (
+        db.session.query(db.func.sum(RewardEntry.nominal))
+        .filter(
+            RewardEntry.periode_payroll_id == slip.periode_payroll_id,
+            RewardEntry.karyawan_id == slip.karyawan_id,
+            RewardEntry.entertainment_event_id.isnot(None),
+        )
+        .scalar()
+    ) or 0
+    if rincian_entertainment_total:
+        rincian_reward = list(rincian_reward) + [("Entertainment", rincian_entertainment_total)]
+
+    rincian_tambahan = (
+        db.session.query(JenisTambahan.nama, db.func.sum(TambahanEntry.nominal))
+        .join(TambahanEntry, TambahanEntry.jenis_tambahan_id == JenisTambahan.id)
+        .filter(
+            TambahanEntry.periode_payroll_id == slip.periode_payroll_id,
+            TambahanEntry.karyawan_id == slip.karyawan_id,
+        )
+        .group_by(JenisTambahan.nama)
+        .all()
+    )
+
+    return render_template(
+        "payroll/slip.html", slip=slip, rincian_reward=rincian_reward, rincian_tambahan=rincian_tambahan
+    )
 
 
 @payroll_bp.route("/slip-saya")

@@ -3,6 +3,7 @@ from app.models import (
     KomponenUpload,
     RewardEntry,
     EntertainmentEvent,
+    TambahanEntry,
     PHLPeriode,
     PotonganBeritaAcaraPeriode,
 )
@@ -32,6 +33,10 @@ def ambil_status_kelengkapan(periode):
         {"label": "PPh21", "jumlah": jumlah_upload(JENIS_PPH21)},
         {"label": "THR", "jumlah": jumlah_upload(JENIS_THR)},
         {"label": "Insentif", "jumlah": jumlah_upload(JENIS_INSENTIF)},
+        {
+            "label": "Tambahan",
+            "jumlah": TambahanEntry.query.filter_by(periode_payroll_id=periode.id).count(),
+        },
         {
             "label": "Reward",
             "jumlah": RewardEntry.query.filter_by(
