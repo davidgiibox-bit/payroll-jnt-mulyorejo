@@ -8,7 +8,10 @@ from wtforms import SubmitField
 import openpyxl
 
 from app.extensions import db
-from app.models import PeriodePayroll, SlipGaji, Karyawan, JenisReward, RewardEntry, JenisTambahan, TambahanEntry
+from app.models import (
+    PeriodePayroll, SlipGaji, Karyawan, JenisReward, RewardEntry, JenisTambahan, TambahanEntry,
+    JenisPotonganLainnya, PotonganLainnyaEntry,
+)
 from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses, punya_akses_minimal
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT, LEVEL_APPROVE
@@ -309,8 +312,23 @@ def lihat_slip(slip_id):
         .all()
     )
 
+    rincian_potongan_lainnya = (
+        db.session.query(JenisPotonganLainnya.nama, db.func.sum(PotonganLainnyaEntry.nominal))
+        .join(PotonganLainnyaEntry, PotonganLainnyaEntry.jenis_potongan_lainnya_id == JenisPotonganLainnya.id)
+        .filter(
+            PotonganLainnyaEntry.periode_payroll_id == slip.periode_payroll_id,
+            PotonganLainnyaEntry.karyawan_id == slip.karyawan_id,
+        )
+        .group_by(JenisPotonganLainnya.nama)
+        .all()
+    )
+
     return render_template(
-        "payroll/slip.html", slip=slip, rincian_reward=rincian_reward, rincian_tambahan=rincian_tambahan
+        "payroll/slip.html",
+        slip=slip,
+        rincian_reward=rincian_reward,
+        rincian_tambahan=rincian_tambahan,
+        rincian_potongan_lainnya=rincian_potongan_lainnya,
     )
 
 

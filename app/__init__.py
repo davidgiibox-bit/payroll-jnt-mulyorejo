@@ -27,12 +27,12 @@ def create_app(config_class=Config):
     from app.blueprints.payroll import payroll_bp
     from app.blueprints.reward import reward_bp
     from app.blueprints.tambahan import tambahan_bp
+    from app.blueprints.potongan_lainnya import potongan_lainnya_bp
     from app.blueprints.phl import phl_bp
     from app.blueprints.berita_acara import berita_acara_bp
     from app.blueprints.reset_total import reset_total_bp
     from app.blueprints.upload_generik.factory import buat_blueprint_upload
     from app.models.komponen_upload import (
-        JENIS_POTONGAN_LAINNYA,
         JENIS_BBM,
         JENIS_PPH21,
         JENIS_THR,
@@ -40,7 +40,6 @@ def create_app(config_class=Config):
     )
 
     daftar_blueprint_upload = [
-        buat_blueprint_upload("potongan-lainnya", "upload_potongan_lainnya", "Potongan Lainnya", JENIS_POTONGAN_LAINNYA, "potongan"),
         buat_blueprint_upload("bbm", "upload_bbm", "Potongan BBM", JENIS_BBM, "potongan"),
         buat_blueprint_upload("pph21", "upload_pph21", "Potongan PPh21", JENIS_PPH21, "potongan"),
         buat_blueprint_upload("thr", "upload_thr", "THR", JENIS_THR, "tambah"),
@@ -56,6 +55,7 @@ def create_app(config_class=Config):
     app.register_blueprint(payroll_bp)
     app.register_blueprint(reward_bp)
     app.register_blueprint(tambahan_bp)
+    app.register_blueprint(potongan_lainnya_bp)
     app.register_blueprint(phl_bp)
     app.register_blueprint(berita_acara_bp)
     app.register_blueprint(reset_total_bp)

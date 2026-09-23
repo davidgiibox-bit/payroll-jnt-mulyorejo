@@ -56,7 +56,7 @@
       {{ baris("Potongan Deposit", slip.potongan_deposit) }}
       {{ baris("Potongan Kehadiran", slip.potongan_kehadiran) }}
       {{ baris("Potongan Terlambat", slip.potongan_terlambat) }}
-      {{ baris("Potongan Lainnya", slip.potongan_lainnya) }}
+      {{ baris_rincian("Potongan Lainnya", slip.potongan_lainnya, rincian_potongan_lainnya, "rincian-potongan-lainnya", "-") }}
       {{ baris("Potongan PPh21", slip.potongan_pph21) }}
       {{ baris("Potongan BPJS-TK", slip.potongan_bpjs_tk) }}
     </table>

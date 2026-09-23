@@ -9,6 +9,7 @@ from app.models.slip_gaji import SlipGaji
 from app.models.komponen_upload import KomponenUpload
 from app.models.reward import JenisReward, EntertainmentEvent, RewardEntry
 from app.models.tambahan import JenisTambahan, TambahanEntry
+from app.models.potongan_lainnya import JenisPotonganLainnya, PotonganLainnyaEntry
 from app.models.phl import PHLPeriode, PHLResiKaryawan
 from app.models.berita_acara import (
     ReasonClaim,
@@ -36,6 +37,8 @@ __all__ = [
     "RewardEntry",
     "JenisTambahan",
     "TambahanEntry",
+    "JenisPotonganLainnya",
+    "PotonganLainnyaEntry",
     "PHLPeriode",
     "PHLResiKaryawan",
     "ReasonClaim",

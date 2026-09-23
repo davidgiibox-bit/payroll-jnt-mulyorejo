@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Potongan Lainnya{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Potongan Lainnya</h4>
+  <div>
+    <a href="{{ url_for('potongan_lainnya.jenis_index') }}" class="btn btn-sm btn-outline-secondary">Master Jenis Potongan Lainnya</a>
+  </div>
+</div>
+
+{% if level_akses_user('upload_potongan_lainnya') in ['edit', 'approve'] %}
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('potongan_lainnya.unggah') }}" enctype="multipart/form-data">
+      {{ form.hidden_tag() }}
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-4">
+          {{ form.periode_payroll_id.label(class="form-label") }}
+          {{ form.periode_payroll_id(class="form-select") }}
+        </div>
+        <div class="col-12 col-md-5">
+          {{ form.file.label(class="form-label") }}
+          {{ form.file(class="form-control") }}
+        </div>
+        <div class="col-12 col-md-3">
+          {{ form.submit(class="btn btn-primary w-100") }}
+        </div>
+      </div>
+      <p class="text-muted small mt-2 mb-0">Format kolom: NIK, Jenis Potongan Lainnya, Nominal, Keterangan.</p>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<form method="GET" class="mb-3">
+  <div class="input-group" style="max-width: 350px;">
+    <select name="periode_id" class="form-select" onchange="this.form.submit()">
+      {% for p in daftar_periode %}
+      <option value="{{ p.id }}" {% if p.id == periode_id_dipilih %}selected{% endif %}>{{ p.label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table table-striped mb-0">
+      <thead><tr><th>NIK</th><th>Nama</th><th>Jenis Potongan Lainnya</th><th>Nominal</th><th>Keterangan</th></tr></thead>
+      <tbody>
+        {% for entry in daftar_entry %}
+        <tr>
+          <td>{{ entry.karyawan.nik_karyawan }}</td>
+          <td>{{ entry.karyawan.nama }}</td>
+          <td>{{ entry.jenis_potongan_lainnya.nama if entry.jenis_potongan_lainnya else '-' }}</td>
+          <td>Rp {{ "{:,.0f}".format(entry.nominal).replace(",", ".") }}</td>
+          <td>{{ entry.keterangan or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">Belum ada data untuk periode ini.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

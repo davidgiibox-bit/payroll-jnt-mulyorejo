@@ -4,11 +4,11 @@ from app.models import (
     RewardEntry,
     EntertainmentEvent,
     TambahanEntry,
+    PotonganLainnyaEntry,
     PHLPeriode,
     PotonganBeritaAcaraPeriode,
 )
 from app.models.komponen_upload import (
-    JENIS_POTONGAN_LAINNYA,
     JENIS_BBM,
     JENIS_PPH21,
     JENIS_THR,
@@ -28,7 +28,10 @@ def ambil_status_kelengkapan(periode):
             "label": "Absensi (dari Google Sheets)",
             "jumlah": AbsensiRingkasanKaryawan.query.filter_by(periode_payroll_id=periode.id).count(),
         },
-        {"label": "Potongan Lainnya", "jumlah": jumlah_upload(JENIS_POTONGAN_LAINNYA)},
+        {
+            "label": "Potongan Lainnya",
+            "jumlah": PotonganLainnyaEntry.query.filter_by(periode_payroll_id=periode.id).count(),
+        },
         {"label": "BBM", "jumlah": jumlah_upload(JENIS_BBM)},
         {"label": "PPh21", "jumlah": jumlah_upload(JENIS_PPH21)},
         {"label": "THR", "jumlah": jumlah_upload(JENIS_THR)},
