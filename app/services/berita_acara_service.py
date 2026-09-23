@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from app.extensions import db
-from app.models import KasusBeritaAcara, CicilanBeritaAcara, PotonganBeritaAcaraPeriode, SlipGaji
+from app.models import KasusBeritaAcara, CicilanBeritaAcara, PotonganBeritaAcaraPeriode, SlipGaji, PeriodePayroll
 from app.models.berita_acara import (
     STATUS_PREDIKSI,
     STATUS_MENUNGGU_KONFIRMASI,
@@ -121,6 +121,42 @@ def buat_cicilan(kasus, jumlah_bulan):
     return cicilan
 
 
+def dampak_periode_berjalan(kasus):
+    """Nominal yang BENAR-BENAR akan kepotong kalau 'Terapkan ke Periode Ini' dijalankan
+    sekarang. Dipakai halaman Review supaya total per karyawan tidak menampilkan nilai
+    klaim PENUH (nominal_final) untuk kasus yang sedang dicicil -- yang sungguhan
+    dipotong per periode cuma nominal_per_bulan (atau sisa saldo penuh kalau karyawan
+    resign), sama seperti logika di terapkan_potongan_periode() di bawah."""
+    if kasus.cicilan and kasus.cicilan.status == "aktif":
+        karyawan = kasus.karyawan
+        if karyawan is not None and karyawan.status_aktif is False:
+            return Decimal(kasus.cicilan.saldo_sisa)
+        return min(Decimal(kasus.cicilan.nominal_per_bulan), Decimal(kasus.cicilan.saldo_sisa))
+    return Decimal(kasus.nominal_final or 0)
+
+
+def _cutoff_kasus_backfill(periode):
+    """Kalau periode ini sedang diproses ULANG (backfill) setelah periode yang lebih
+    baru SUDAH LEBIH DULU menerapkan potongan Berita Acara, kembalikan waktu paling
+    awal potongan diterapkan ke periode yang lebih baru itu. Dipakai untuk membatasi
+    kasus_langsung/cicilan yang diambil supaya kasus BARU yang dibuat setelah periode
+    lebih baru itu diproses tidak ikut "nyasar" ke periode lama ini.
+
+    Mengembalikan None kalau belum ada periode lebih baru yang diproses (alur normal,
+    proses berurutan maju) -- di situ tidak ada pembatasan tambahan."""
+    return (
+        db.session.query(db.func.min(PotonganBeritaAcaraPeriode.created_at))
+        .join(PeriodePayroll, PotonganBeritaAcaraPeriode.periode_payroll_id == PeriodePayroll.id)
+        .filter(
+            db.or_(
+                PeriodePayroll.tahun > periode.tahun,
+                db.and_(PeriodePayroll.tahun == periode.tahun, PeriodePayroll.bulan > periode.bulan),
+            )
+        )
+        .scalar()
+    )
+
+
 def terapkan_potongan_periode(periode):
     """Terapkan potongan Berita Acara/Cicilan ke periode ybs:
     - Kasus keputusan='langsung' yang belum pernah diterapkan -> potong penuh sekali.
@@ -132,10 +168,17 @@ def terapkan_potongan_periode(periode):
     karyawan tsb secara manual.
     """
     peringatan = []
+    cutoff_backfill = _cutoff_kasus_backfill(periode)
 
     kasus_langsung = KasusBeritaAcara.query.filter_by(keputusan=KEPUTUSAN_LANGSUNG).all()
     for kasus in kasus_langsung:
         if kasus.sudah_diterapkan or kasus.karyawan_id is None:
+            continue
+        if cutoff_backfill is not None and kasus.created_at >= cutoff_backfill:
+            # Periode ini sedang di-backfill (ada periode lebih baru yang sudah lebih
+            # dulu diproses) -- kasus yang dibuat SETELAH periode lebih baru itu
+            # diproses bukan bagian dari periode lama ini, biarkan menunggu periode
+            # berjalan yang sebenarnya.
             continue
         nominal = Decimal(kasus.nominal_final or 0)
         db.session.add(
@@ -153,6 +196,8 @@ def terapkan_potongan_periode(periode):
             periode_payroll_id=periode.id, kasus_id=cicilan.kasus_id
         ).first()
         if sudah_ada:
+            continue
+        if cutoff_backfill is not None and cicilan.created_at >= cutoff_backfill:
             continue
 
         karyawan = cicilan.kasus.karyawan

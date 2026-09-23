@@ -17,6 +17,7 @@ from app.services.berita_acara_service import (
     impor_pusat,
     buat_cicilan,
     terapkan_potongan_periode,
+    dampak_periode_berjalan,
 )
 
 KODE_MENU = "berita_acara"
@@ -239,7 +240,7 @@ def review():
         nama = kasus.karyawan.nama
         per_karyawan.setdefault(nama, {"kasus": [], "total": 0})
         per_karyawan[nama]["kasus"].append(kasus)
-        per_karyawan[nama]["total"] += float(kasus.nominal_final or 0)
+        per_karyawan[nama]["total"] += float(dampak_periode_berjalan(kasus))
 
     daftar_terurut = sorted(per_karyawan.items(), key=lambda x: x[1]["total"], reverse=True)
 
