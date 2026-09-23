@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from app.models import PeriodePayroll, KomponenUpload, Karyawan
+from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT
 from app.blueprints.upload_generik.forms import UploadKomponenForm
@@ -71,6 +72,10 @@ def buat_blueprint_upload(slug, kode_menu, label, jenis, arah):
             return redirect(url_for(f"upload_{slug}.index"))
 
         periode = PeriodePayroll.query.get_or_404(form.periode_payroll_id.data)
+        if periode.status == STATUS_FINAL:
+            flash(f"Periode '{periode.label}' sudah final, {label} tidak bisa diubah lagi.", "danger")
+            return redirect(url_for(f"upload_{slug}.index", periode_id=periode.id))
+
         laporan = unggah_komponen(periode, jenis, form.file.data, current_user.id)
 
         flash(f"{laporan['jumlah_baris']} baris {label} berhasil diunggah untuk periode {periode.label}.", "success")

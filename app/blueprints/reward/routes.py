@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 
 from app.extensions import db
 from app.models import PeriodePayroll, JenisReward, RewardEntry, EntertainmentEvent, Karyawan
+from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT
 from app.blueprints.reward import reward_bp
@@ -104,6 +105,10 @@ def unggah():
         return redirect(url_for("reward.index"))
 
     periode = PeriodePayroll.query.get_or_404(form.periode_payroll_id.data)
+    if periode.status == STATUS_FINAL:
+        flash(f"Periode '{periode.label}' sudah final, reward tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("reward.index", periode_id=periode.id))
+
     baris_valid, masalah = parse_template_reward(form.file.data)
 
     RewardEntry.query.filter_by(periode_payroll_id=periode.id, entertainment_event_id=None).delete()
@@ -155,8 +160,13 @@ def entertainment_tambah():
     form = EntertainmentEventForm()
     form.periode_payroll_id.choices = [(p.id, p.label) for p in _daftar_periode()]
     if form.validate_on_submit():
+        periode = PeriodePayroll.query.get_or_404(form.periode_payroll_id.data)
+        if periode.status == STATUS_FINAL:
+            flash(f"Periode '{periode.label}' sudah final, tidak bisa membuat event entertainment baru.", "danger")
+            return redirect(url_for("reward.entertainment_index"))
+
         event = EntertainmentEvent(
-            periode_payroll_id=form.periode_payroll_id.data,
+            periode_payroll_id=periode.id,
             deskripsi=form.deskripsi.data.strip(),
             total_biaya=form.total_biaya.data,
         )
@@ -174,6 +184,10 @@ def entertainment_detail(event_id):
     event = EntertainmentEvent.query.get_or_404(event_id)
     form = TambahPesertaForm()
     form.karyawan_id.choices = [(k.id, k.nama) for k in Karyawan.query.order_by(Karyawan.nama).all()]
+
+    if request.method == "POST" and event.periode.status == STATUS_FINAL:
+        flash(f"Periode '{event.periode.label}' sudah final, entertainment tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("reward.entertainment_detail", event_id=event.id))
 
     if form.validate_on_submit():
         db.session.add(
@@ -201,7 +215,15 @@ def entertainment_detail(event_id):
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
 def entertainment_hapus_peserta(event_id, peserta_id):
     event = EntertainmentEvent.query.get_or_404(event_id)
+    if event.periode.status == STATUS_FINAL:
+        flash(f"Periode '{event.periode.label}' sudah final, entertainment tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("reward.entertainment_detail", event_id=event.id))
+
     peserta = RewardEntry.query.get_or_404(peserta_id)
+    if peserta.entertainment_event_id != event.id:
+        flash("Peserta tidak ditemukan pada event ini.", "danger")
+        return redirect(url_for("reward.entertainment_detail", event_id=event.id))
+
     db.session.delete(peserta)
     db.session.flush()
     hitung_ulang_reward_slip(event.periode)

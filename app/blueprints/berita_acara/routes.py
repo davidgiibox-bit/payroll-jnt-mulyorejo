@@ -6,6 +6,7 @@ import openpyxl
 
 from app.extensions import db
 from app.models import ReasonClaim, KasusBeritaAcara, Karyawan, PeriodePayroll
+from app.models.periode_payroll import STATUS_FINAL
 from app.models.berita_acara import STATUS_MENUNGGU_KONFIRMASI, KEPUTUSAN_LANGSUNG, KEPUTUSAN_CICIL
 from app.utils.akses import butuh_akses
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT, LEVEL_APPROVE
@@ -255,6 +256,10 @@ def review():
 @butuh_akses(KODE_MENU, LEVEL_APPROVE)
 def terapkan(periode_id):
     periode = PeriodePayroll.query.get_or_404(periode_id)
+    if periode.status == STATUS_FINAL:
+        flash(f"Periode '{periode.label}' sudah final, potongan Berita Acara tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("berita_acara.review", periode_id=periode.id))
+
     laporan = terapkan_potongan_periode(periode)
     flash(f"Potongan Berita Acara/Cicilan berhasil diterapkan ke periode {periode.label}.", "success")
     for peringatan in laporan["peringatan"]:

@@ -3,6 +3,7 @@ from flask_login import login_required
 
 from app.extensions import db
 from app.models import PeriodePayroll, PHLPeriode, PHLResiKaryawan, Karyawan
+from app.models.periode_payroll import STATUS_FINAL
 from app.utils.akses import butuh_akses
 from app.models.akses import LEVEL_LIHAT, LEVEL_EDIT
 from app.blueprints.phl import phl_bp
@@ -55,6 +56,10 @@ def index():
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
 def simpan_total(periode_id):
     periode = PeriodePayroll.query.get_or_404(periode_id)
+    if periode.status == STATUS_FINAL:
+        flash(f"Periode '{periode.label}' sudah final, PHL tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("phl.index", periode_id=periode.id))
+
     form = TotalPHLForm()
     if not form.validate_on_submit():
         for field_name, error_list in form.errors.items():
@@ -81,6 +86,10 @@ def simpan_total(periode_id):
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
 def simpan_resi(periode_id):
     periode = PeriodePayroll.query.get_or_404(periode_id)
+    if periode.status == STATUS_FINAL:
+        flash(f"Periode '{periode.label}' sudah final, PHL tidak bisa diubah lagi.", "danger")
+        return redirect(url_for("phl.index", periode_id=periode.id))
+
     phl_periode = PHLPeriode.query.filter_by(periode_payroll_id=periode.id).first()
     if phl_periode is None:
         flash("Simpan dulu total biaya & total paket sebelum mengisi jumlah resi.", "danger")
