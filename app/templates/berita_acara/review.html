@@ -20,13 +20,24 @@
 </form>
 {% endif %}
 
+{% if daftar_terurut %}
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <span class="fw-bold">{{ daftar_terurut|length }} karyawan &middot; Total keseluruhan: Rp {{ "{:,.0f}".format(total_keseluruhan).replace(",", ".") }}</span>
+  <div>
+    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).show();})">Buka semua</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).hide();})">Tutup semua</button>
+  </div>
+</div>
+{% endif %}
+
 {% for nama, data in daftar_terurut %}
-<div class="card shadow-sm mb-3">
-  <div class="card-body">
-    <div class="d-flex justify-content-between">
-      <h6 class="mb-2">{{ nama }}</h6>
+<div class="card shadow-sm mb-2">
+  <div class="card-body py-2">
+    <a href="#rincian-ba-{{ loop.index }}" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center text-decoration-none text-body">
+      <span><strong>{{ nama }}</strong> <span class="text-muted small">({{ data.kasus|length }} kasus) &#9662;</span></span>
       <span class="fw-bold">Total: Rp {{ "{:,.0f}".format(data.total).replace(",", ".") }}</span>
-    </div>
+    </a>
+    <div class="collapse rincian-ba mt-2 table-responsive" id="rincian-ba-{{ loop.index }}">
     <table class="table table-sm mb-0">
       <thead><tr><th>AWB</th><th>Nominal</th><th>Reason</th><th>Keputusan</th><th></th></tr></thead>
       <tbody>
@@ -45,6 +56,7 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
   </div>
 </div>
 {% else %}

@@ -243,12 +243,14 @@ def review():
         per_karyawan[nama]["total"] += float(dampak_periode_berjalan(kasus))
 
     daftar_terurut = sorted(per_karyawan.items(), key=lambda x: x[1]["total"], reverse=True)
+    total_keseluruhan = sum(data["total"] for _, data in daftar_terurut)
 
     return render_template(
         "berita_acara/review.html",
         daftar_periode=daftar_periode,
         periode_id_dipilih=periode_id_dipilih,
         daftar_terurut=daftar_terurut,
+        total_keseluruhan=total_keseluruhan,
     )
 
 
