@@ -15,7 +15,7 @@
       var v = parseInt(localStorage.getItem(KUNCI), 10);
       if (PILIHAN.indexOf(v) !== -1) return v;
     } catch (e) {}
-    return 25;
+    return 10;
   }
 
   function simpanPerHalaman(v) {
@@ -39,7 +39,10 @@
     bar.className = 'd-flex justify-content-between align-items-center flex-wrap gap-2 px-2 py-2 border-top small';
     bar.style.display = 'none';
     var pembungkus = tabel.closest('.table-responsive') || tabel;
-    pembungkus.insertAdjacentElement('afterend', bar);
+    // Tabel di dalam dropdown (.collapse): kontrol halaman ikut di dalamnya, jadi baru
+    // terlihat setelah dropdown dibuka.
+    if (pembungkus.classList.contains('collapse')) pembungkus.appendChild(bar);
+    else pembungkus.insertAdjacentElement('afterend', bar);
 
     var terjadwal = false;
     function jadwalkan() {
@@ -80,10 +83,8 @@
         pilih.appendChild(o);
       });
       pilih.addEventListener('change', function () {
-        state.perHalaman = parseInt(pilih.value, 10);
-        state.halaman = 1;
-        simpanPerHalaman(state.perHalaman);
-        render();
+        simpanPerHalaman(parseInt(pilih.value, 10));
+        document.dispatchEvent(new CustomEvent('baris-per-halaman-berubah', { detail: parseInt(pilih.value, 10) }));
       });
       var info = document.createElement('span');
       info.className = 'text-muted';
@@ -115,6 +116,12 @@
       childList: true, subtree: true, attributes: true, attributeFilter: ['style']
     });
     tabel.addEventListener('tabel-diurutkan', function () { state.halaman = 1; jadwalkan(); });
+    // Ubah pilihan di satu tabel -> semua tabel di halaman ini ikut.
+    document.addEventListener('baris-per-halaman-berubah', function (e) {
+      state.perHalaman = e.detail;
+      state.halaman = 1;
+      render();
+    });
     render();
   }
 
