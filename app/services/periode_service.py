@@ -3,6 +3,8 @@ from decimal import Decimal
 from app.extensions import db
 from app.models import (
     KomponenUpload,
+    TambahanEntry,
+    PotonganLainnyaEntry,
     RewardEntry,
     EntertainmentEvent,
     PHLPeriode,
@@ -66,6 +68,8 @@ def hapus_periode_payroll(periode):
 
     # 3. Hapus komponen upload, reward (termasuk peserta entertainment), event entertainment, PHL
     KomponenUpload.query.filter_by(periode_payroll_id=periode.id).delete()
+    TambahanEntry.query.filter_by(periode_payroll_id=periode.id).delete()
+    PotonganLainnyaEntry.query.filter_by(periode_payroll_id=periode.id).delete()
     RewardEntry.query.filter_by(periode_payroll_id=periode.id).delete()
     EntertainmentEvent.query.filter_by(periode_payroll_id=periode.id).delete()
 

@@ -76,7 +76,7 @@
             <a href="{{ url_for('berita_acara.ubah_keputusan', kasus_id=kasus.id) }}" class="btn btn-sm btn-outline-secondary">Ubah Keputusan</a>
             {% endif %}
             {% if bisa_hapus and not kasus.sudah_diterapkan %}
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="hapusSatu({{ kasus.id }}, {{ kasus.awb|tojson }})">Hapus</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-id="{{ kasus.id }}" data-awb="{{ kasus.awb }}" onclick="hapusSatu(this.dataset.id, this.dataset.awb)">Hapus</button>
             {% endif %}
           </td>
         </tr>
