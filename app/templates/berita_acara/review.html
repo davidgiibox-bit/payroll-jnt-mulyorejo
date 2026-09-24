@@ -20,46 +20,134 @@
 </form>
 {% endif %}
 
+{% set bisa_edit = level_akses_user('berita_acara') in ['edit', 'approve'] %}
 {% if daftar_terurut %}
-<div class="d-flex justify-content-between align-items-center mb-2">
-  <span class="fw-bold">{{ daftar_terurut|length }} karyawan &middot; Total keseluruhan: Rp {{ "{:,.0f}".format(total_keseluruhan).replace(",", ".") }}</span>
-  <div>
-    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).show();})">Buka semua</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).hide();})">Tutup semua</button>
-  </div>
-</div>
-{% endif %}
+<form method="POST" action="{{ url_for('berita_acara.keputusan_massal') }}" id="form-massal">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="periode_id" value="{{ periode_id_dipilih }}">
 
-{% for nama, data in daftar_terurut %}
-<div class="card shadow-sm mb-2">
-  <div class="card-body py-2">
-    <a href="#rincian-ba-{{ loop.index }}" data-bs-toggle="collapse" class="d-flex justify-content-between align-items-center text-decoration-none text-body">
-      <span><strong>{{ nama }}</strong> <span class="text-muted small">({{ data.kasus|length }} kasus) &#9662;</span></span>
-      <span class="fw-bold">Total: Rp {{ "{:,.0f}".format(data.total).replace(",", ".") }}</span>
-    </a>
-    <div class="collapse rincian-ba mt-2 table-responsive" id="rincian-ba-{{ loop.index }}">
-    <table class="table table-sm mb-0">
-      <thead><tr><th>AWB</th><th>Nominal</th><th>Reason</th><th>Keputusan</th><th></th></tr></thead>
-      <tbody>
-        {% for kasus in data.kasus %}
-        <tr>
-          <td>{{ kasus.awb }}</td>
-          <td>Rp {{ "{:,.0f}".format(kasus.nominal_final or 0).replace(",", ".") }}</td>
-          <td>{{ kasus.reason_claim.nama if kasus.reason_claim else '-' }}</td>
-          <td>{{ kasus.keputusan or '-' }}{% if kasus.keputusan == 'cicil' %} ({{ kasus.jumlah_bulan_cicilan }}x, sisa Rp{{ "{:,.0f}".format(kasus.cicilan.saldo_sisa).replace(",", ".") if kasus.cicilan else 0 }}){% endif %}</td>
-          <td class="text-end">
-            {% if not kasus.sudah_diterapkan and level_akses_user('berita_acara') in ['edit', 'approve'] %}
-            <a href="{{ url_for('berita_acara.ubah_keputusan', kasus_id=kasus.id) }}" class="btn btn-sm btn-outline-secondary">Ubah</a>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <span class="fw-bold">{{ daftar_terurut|length }} karyawan &middot; Total keseluruhan: Rp {{ "{:,.0f}".format(total_keseluruhan).replace(",", ".") }}</span>
+    <div class="d-flex align-items-center gap-2">
+      {% if bisa_edit %}
+      <label class="form-check-label small"><input type="checkbox" class="form-check-input me-1" id="pilih-semua"> Pilih semua resi</label>
+      {% endif %}
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).show();})">Buka semua</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" onclick="document.querySelectorAll('.rincian-ba').forEach(function(e){bootstrap.Collapse.getOrCreateInstance(e,{toggle:false}).hide();})">Tutup semua</button>
     </div>
   </div>
-</div>
+
+  {% for nama, data in daftar_terurut %}
+  {% set idx = loop.index %}
+  <div class="card shadow-sm mb-2">
+    <div class="card-body py-2">
+      <div class="d-flex align-items-center">
+        {% if bisa_edit %}
+        <input type="checkbox" class="form-check-input me-2 cb-karyawan" data-target="k{{ idx }}" title="Pilih semua resi karyawan ini">
+        {% endif %}
+        <a href="#rincian-ba-{{ idx }}" data-bs-toggle="collapse" class="flex-grow-1 d-flex justify-content-between align-items-center text-decoration-none text-body">
+          <span><strong>{{ nama }}</strong> <span class="text-muted small">({{ data.kasus|length }} kasus) &#9662;</span></span>
+          <span class="fw-bold">Total: Rp {{ "{:,.0f}".format(data.total).replace(",", ".") }}</span>
+        </a>
+      </div>
+      <div class="collapse rincian-ba mt-2 table-responsive" id="rincian-ba-{{ idx }}">
+      <table class="table table-sm mb-0">
+        <thead><tr>{% if bisa_edit %}<th style="width:32px;"></th>{% endif %}<th>AWB</th><th>Nominal</th><th>Reason</th><th>Keputusan</th><th></th></tr></thead>
+        <tbody>
+          {% for kasus in data.kasus %}
+          <tr>
+            {% if bisa_edit %}
+            <td>
+              {% if not kasus.sudah_diterapkan %}
+              <input type="checkbox" class="form-check-input cb-kasus k{{ idx }}" name="kasus_id" value="{{ kasus.id }}" data-nominal="{{ (kasus.nominal_final or 0)|int }}">
+              {% endif %}
+            </td>
+            {% endif %}
+            <td>{{ kasus.awb }}</td>
+            <td>Rp {{ "{:,.0f}".format(kasus.nominal_final or 0).replace(",", ".") }}</td>
+            <td>{{ kasus.reason_claim.nama if kasus.reason_claim else '-' }}</td>
+            <td>{{ kasus.keputusan or '-' }}{% if kasus.keputusan == 'cicil' %} ({{ kasus.jumlah_bulan_cicilan }}x, sisa Rp{{ "{:,.0f}".format(kasus.cicilan.saldo_sisa).replace(",", ".") if kasus.cicilan else 0 }}){% endif %}</td>
+            <td class="text-end">
+              {% if not kasus.sudah_diterapkan and bisa_edit %}
+              <a href="{{ url_for('berita_acara.ubah_keputusan', kasus_id=kasus.id) }}" class="btn btn-sm btn-outline-secondary">Ubah</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% if bisa_edit %}
+  <div class="card shadow border-primary position-sticky bottom-0 mt-3" style="z-index: 10;">
+    <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+      <span class="me-auto"><strong id="jumlah-dipilih">0</strong> resi dipilih &middot; nilai klaim Rp <span id="nominal-dipilih">0</span></span>
+      <select name="keputusan" id="pilih-keputusan" class="form-select form-select-sm" style="width:auto;">
+        <option value="cicil">Ubah jadi cicilan</option>
+        <option value="langsung">Ubah jadi potong langsung</option>
+      </select>
+      <span id="kolom-bulan" class="d-flex align-items-center gap-1">
+        <input type="number" name="jumlah_bulan" id="jumlah-bulan" class="form-control form-control-sm" style="width:70px;" min="1" max="60" value="3">
+        <span class="small">bulan</span>
+      </span>
+      <button type="submit" class="btn btn-sm btn-primary" id="tombol-massal" disabled>Terapkan ke resi terpilih</button>
+    </div>
+  </div>
+  {% endif %}
+</form>
 {% else %}
 <p class="text-muted">Tidak ada kasus yang menunggu diterapkan.</p>
-{% endfor %}
+{% endif %}
+
+<script>
+(function () {
+  var semua = document.querySelectorAll('.cb-kasus');
+  var pilihSemua = document.getElementById('pilih-semua');
+  var tombol = document.getElementById('tombol-massal');
+  if (!tombol) return;
+
+  function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+
+  function refresh() {
+    var jumlah = 0, total = 0;
+    semua.forEach(function (c) { if (c.checked) { jumlah++; total += parseInt(c.dataset.nominal || '0', 10); } });
+    document.getElementById('jumlah-dipilih').textContent = jumlah;
+    document.getElementById('nominal-dipilih').textContent = fmt(total);
+    tombol.disabled = jumlah === 0;
+    if (pilihSemua) { pilihSemua.checked = semua.length > 0 && jumlah === semua.length; }
+    document.querySelectorAll('.cb-karyawan').forEach(function (h) {
+      var anak = document.querySelectorAll('.' + h.dataset.target);
+      var dicentang = Array.prototype.filter.call(anak, function (c) { return c.checked; }).length;
+      h.checked = anak.length > 0 && dicentang === anak.length;
+      h.indeterminate = dicentang > 0 && dicentang < anak.length;
+    });
+  }
+
+  if (pilihSemua) pilihSemua.addEventListener('change', function () {
+    semua.forEach(function (c) { c.checked = pilihSemua.checked; });
+    refresh();
+  });
+  document.querySelectorAll('.cb-karyawan').forEach(function (h) {
+    h.addEventListener('change', function () {
+      document.querySelectorAll('.' + h.dataset.target).forEach(function (c) { c.checked = h.checked; });
+      refresh();
+    });
+  });
+  semua.forEach(function (c) { c.addEventListener('change', refresh); });
+
+  var pilihan = document.getElementById('pilih-keputusan');
+  var kolomBulan = document.getElementById('kolom-bulan');
+  pilihan.addEventListener('change', function () { kolomBulan.style.display = pilihan.value === 'cicil' ? '' : 'none'; });
+
+  document.getElementById('form-massal').addEventListener('submit', function (e) {
+    var n = document.getElementById('jumlah-dipilih').textContent;
+    var teks = pilihan.value === 'cicil' ? 'cicilan ' + document.getElementById('jumlah-bulan').value + ' bulan' : 'potong langsung';
+    if (!confirm('Ubah ' + n + ' resi terpilih menjadi ' + teks + '?')) e.preventDefault();
+  });
+  refresh();
+})();
+</script>
 {% endblock %}

@@ -18,6 +18,7 @@ from app.services.berita_acara_service import (
     buat_cicilan,
     terapkan_potongan_periode,
     dampak_periode_berjalan,
+    ubah_keputusan_massal,
 )
 
 KODE_MENU = "berita_acara"
@@ -215,6 +216,31 @@ def ubah_keputusan(kasus_id):
         flash("Keputusan berhasil disimpan.", "success")
         return redirect(url_for("berita_acara.review"))
     return render_template("berita_acara/keputusan_form.html", kasus=kasus, form=form)
+
+
+@berita_acara_bp.route("/keputusan-massal", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_EDIT)
+def keputusan_massal():
+    id_list = request.form.getlist("kasus_id", type=int)
+    keputusan = request.form.get("keputusan")
+    jumlah_bulan = request.form.get("jumlah_bulan", type=int)
+    periode_id = request.form.get("periode_id", type=int)
+
+    if not id_list:
+        flash("Belum ada resi yang dipilih.", "warning")
+    elif keputusan not in (KEPUTUSAN_LANGSUNG, KEPUTUSAN_CICIL):
+        flash("Pilihan keputusan tidak valid.", "danger")
+    elif keputusan == KEPUTUSAN_CICIL and not (jumlah_bulan and 1 <= jumlah_bulan <= 60):
+        flash("Jumlah bulan cicilan harus antara 1 sampai 60.", "danger")
+    else:
+        daftar_kasus = KasusBeritaAcara.query.filter(KasusBeritaAcara.id.in_(id_list)).all()
+        berhasil, dilewati = ubah_keputusan_massal(daftar_kasus, keputusan, jumlah_bulan)
+        teks = f"cicil {jumlah_bulan} bulan" if keputusan == KEPUTUSAN_CICIL else "potong langsung"
+        flash(f"{berhasil} resi diubah menjadi {teks}.", "success")
+        if dilewati:
+            flash(f"{dilewati} resi dilewati (sudah pernah dipotong atau belum di-assign ke karyawan).", "warning")
+    return redirect(url_for("berita_acara.review", periode_id=periode_id) if periode_id else url_for("berita_acara.review"))
 
 
 # --- Review Sebelum Final (poin l) ---

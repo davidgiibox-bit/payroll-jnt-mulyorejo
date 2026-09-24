@@ -93,7 +93,30 @@ def impor_pusat(file_storage):
     }
 
 
-def buat_cicilan(kasus, jumlah_bulan):
+def ubah_keputusan_massal(daftar_kasus, keputusan, jumlah_bulan=None):
+    """Terapkan keputusan yang sama (cicil N bulan / potong langsung) ke banyak kasus
+    sekaligus. Kasus yang sudah pernah dipotong atau belum ter-assign karyawan dilewati.
+    Semua perubahan dicommit sekali di akhir. Mengembalikan (jumlah_berhasil, jumlah_dilewati)."""
+    berhasil = 0
+    dilewati = 0
+    for kasus in daftar_kasus:
+        if kasus.sudah_diterapkan or kasus.karyawan_id is None:
+            dilewati += 1
+            continue
+        if keputusan == "cicil":
+            buat_cicilan(kasus, jumlah_bulan, commit=False)
+        else:
+            if kasus.cicilan:
+                db.session.delete(kasus.cicilan)
+                db.session.flush()
+            kasus.keputusan = KEPUTUSAN_LANGSUNG
+            kasus.jumlah_bulan_cicilan = None
+        berhasil += 1
+    db.session.commit()
+    return berhasil, dilewati
+
+
+def buat_cicilan(kasus, jumlah_bulan, commit=True):
     """Ubah keputusan kasus jadi cicil, buat entri CicilanBeritaAcara dengan saldo
     berjalan sendiri. Kalau sebelumnya sudah ada cicilan, hapus & buat ulang
     (hanya boleh dipanggil sebelum ada potongan yang sudah diterapkan ke periode)."""
@@ -117,7 +140,10 @@ def buat_cicilan(kasus, jumlah_bulan):
     db.session.add(cicilan)
     kasus.keputusan = "cicil"
     kasus.jumlah_bulan_cicilan = jumlah_bulan
-    db.session.commit()
+    if commit:
+        db.session.commit()
+    else:
+        db.session.flush()
     return cicilan
 
 

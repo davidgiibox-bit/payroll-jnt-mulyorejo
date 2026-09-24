@@ -69,7 +69,9 @@ class KasusBeritaAcara(db.Model):
 
     @property
     def sudah_diterapkan(self):
-        return len(self.potongan_list) > 0 or self.cicilan is not None
+        """True kalau sudah pernah ada potongan yang benar-benar dicatat ke suatu periode.
+        Cicilan yang baru dibuat tapi belum pernah dipotong masih boleh diubah keputusannya."""
+        return len(self.potongan_list) > 0
 
     def __repr__(self):
         return f"<KasusBeritaAcara awb={self.awb} status={self.status}>"
