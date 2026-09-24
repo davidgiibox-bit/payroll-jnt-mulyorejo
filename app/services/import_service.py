@@ -208,6 +208,23 @@ def _ke_tanggal(nilai):
     return None
 
 
+def _pesan_kolom_hilang(baris_list, kolom_wajib):
+    """Kalau ada kolom wajib yang tidak ada di header file (pencocokan persis, huruf
+    besar/kecil dianggap beda), kembalikan pesan yang menyebut kolom apa yang hilang &
+    kolom apa saja yang terbaca -- supaya tidak diam-diam terimpor sebagai Rp0."""
+    if not baris_list:
+        return None
+    header_terbaca = list(baris_list[0].keys())
+    hilang = [k for k in kolom_wajib if k not in header_terbaca]
+    if not hilang:
+        return None
+    return (
+        f"Kolom wajib tidak ditemukan di file: {', '.join(hilang)}. "
+        f"Nama kolom harus persis sama dengan template. Kolom yang terbaca di file: {', '.join(header_terbaca)}. "
+        f"Tidak ada data yang diimpor."
+    )
+
+
 def parse_template_prediksi_berita_acara(file_storage):
     """Template dari tim: AWB, NIK Karyawan, Nominal, Reason Claim, Tanggal, Keterangan.
 
@@ -215,6 +232,9 @@ def parse_template_prediksi_berita_acara(file_storage):
     awb, karyawan, nominal, reason_claim, tanggal, keterangan.
     """
     baris_list = baca_baris_file(file_storage)
+    pesan_hilang = _pesan_kolom_hilang(baris_list, ["AWB", "Nominal"])
+    if pesan_hilang:
+        return [], [pesan_hilang]
     peta_karyawan = {k.nik_karyawan.strip().lower(): k for k in Karyawan.query.all()}
     peta_reason = {r.nama.strip().lower(): r for r in ReasonClaim.query.all()}
 
@@ -258,6 +278,9 @@ def parse_template_pusat_berita_acara(file_storage):
     Mengembalikan (baris_valid, masalah). baris_valid = list of dict mentah per kolom.
     """
     baris_list = baca_baris_file(file_storage)
+    pesan_hilang = _pesan_kolom_hilang(baris_list, ["AWB", "Nilai Claim"])
+    if pesan_hilang:
+        return [], [pesan_hilang]
     peta_reason = {r.nama.strip().lower(): r for r in ReasonClaim.query.all()}
 
     baris_valid = []
