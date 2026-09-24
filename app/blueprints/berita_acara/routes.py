@@ -5,7 +5,7 @@ from flask_login import login_required
 import openpyxl
 
 from app.extensions import db
-from app.models import ReasonClaim, KasusBeritaAcara, Karyawan, PeriodePayroll
+from app.models import ReasonClaim, KasusBeritaAcara, Karyawan, PeriodePayroll, SlipGaji
 from app.models.periode_payroll import STATUS_FINAL
 from app.models.berita_acara import STATUS_MENUNGGU_KONFIRMASI, KEPUTUSAN_LANGSUNG, KEPUTUSAN_CICIL
 from app.utils.akses import butuh_akses
@@ -259,14 +259,28 @@ def review():
         .all()
     )
 
+    # THP (sebelum potongan sesudah-THP) tiap karyawan di periode yang dipilih, untuk
+    # pratinjau seberapa besar potongan Berita Acara dibanding penghasilan bersihnya.
+    peta_thp = {}
+    if periode_id_dipilih:
+        peta_thp = {
+            s.karyawan_id: float(s.subtotal_thp)
+            for s in SlipGaji.query.filter_by(periode_payroll_id=periode_id_dipilih).all()
+        }
+
     per_karyawan = {}
+    bulanan_map = {}
     for kasus in daftar_kasus:
         if kasus.sudah_diterapkan and not (kasus.cicilan and kasus.cicilan.status == "aktif"):
             continue
         nama = kasus.karyawan.nama
-        per_karyawan.setdefault(nama, {"kasus": [], "total": 0})
+        per_karyawan.setdefault(
+            nama, {"kasus": [], "total": 0, "thp": peta_thp.get(kasus.karyawan_id)}
+        )
         per_karyawan[nama]["kasus"].append(kasus)
-        per_karyawan[nama]["total"] += float(dampak_periode_berjalan(kasus))
+        dampak = float(dampak_periode_berjalan(kasus))
+        per_karyawan[nama]["total"] += dampak
+        bulanan_map[kasus.id] = round(dampak)
 
     daftar_terurut = sorted(per_karyawan.items(), key=lambda x: x[1]["total"], reverse=True)
     total_keseluruhan = sum(data["total"] for _, data in daftar_terurut)
@@ -277,6 +291,7 @@ def review():
         periode_id_dipilih=periode_id_dipilih,
         daftar_terurut=daftar_terurut,
         total_keseluruhan=total_keseluruhan,
+        bulanan_map=bulanan_map,
     )
 
 

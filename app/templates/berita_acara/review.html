@@ -39,7 +39,7 @@
 
   {% for nama, data in daftar_terurut %}
   {% set idx = loop.index %}
-  <div class="card shadow-sm mb-2">
+  <div class="card shadow-sm mb-2 kartu-karyawan" data-nama="{{ nama }}" data-thp="{{ data.thp if data.thp is not none else '' }}">
     <div class="card-body py-2">
       <div class="d-flex align-items-center">
         {% if bisa_edit %}
@@ -55,7 +55,7 @@
         <thead><tr>{% if bisa_edit %}<th style="width:32px;"></th>{% endif %}<th>AWB</th><th>Nominal</th><th>Reason</th><th>Keputusan</th><th></th></tr></thead>
         <tbody>
           {% for kasus in data.kasus %}
-          <tr>
+          <tr class="baris-kasus" data-bulanan="{{ bulanan_map.get(kasus.id, 0) }}" data-nominal="{{ (kasus.nominal_final or 0)|int }}">
             {% if bisa_edit %}
             <td>
               {% if not kasus.sudah_diterapkan %}
@@ -83,6 +83,19 @@
 
   {% if bisa_edit %}
   <div class="card shadow border-primary position-sticky bottom-0 mt-3" style="z-index: 10;">
+    <div id="panel-pratinjau" class="border-bottom px-3 py-2" style="display:none; max-height: 240px; overflow-y: auto;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1">
+        <strong class="small">Pratinjau potongan Berita Acara bulan pertama (karyawan terpilih)</strong>
+        <label class="small mb-0">Peringatkan bila di atas
+          <input type="number" id="batas-persen" class="form-control form-control-sm d-inline-block" style="width:65px;" min="1" max="100" value="30"> % THP
+        </label>
+      </div>
+      <table class="table table-sm mb-1 small text-nowrap">
+        <thead><tr><th>Karyawan</th><th class="text-end">Sekarang</th><th class="text-end">Setelah diubah</th><th class="text-end">THP</th><th class="text-end">% THP</th><th>Status</th></tr></thead>
+        <tbody id="isi-pratinjau"></tbody>
+      </table>
+      <div class="text-muted small">Potong langsung hanya kena sekali (bulan pertama), cicilan berlanjut tiap bulan. THP = penghasilan bersih slip periode ini sebelum potongan sesudah-THP; karyawan tanpa slip tidak bisa dibandingkan.</div>
+    </div>
     <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
       <span class="me-auto"><strong id="jumlah-dipilih">0</strong> resi dipilih &middot; nilai klaim Rp <span id="nominal-dipilih">0</span></span>
       <select name="keputusan" id="pilih-keputusan" class="form-select form-select-sm" style="width:auto;">
@@ -111,7 +124,53 @@
 
   function fmt(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 
+  function rp(n) { return 'Rp ' + fmt(Math.round(n)); }
+
+  function pratinjau() {
+    var pilihan = document.getElementById('pilih-keputusan');
+    var n = Math.max(parseInt(document.getElementById('jumlah-bulan').value, 10) || 1, 1);
+    var batas = parseFloat(document.getElementById('batas-persen').value) || 30;
+    var baris = [];
+    document.querySelectorAll('.kartu-karyawan').forEach(function (kartu) {
+      var sekarang = 0, sesudah = 0, terpilih = false;
+      kartu.querySelectorAll('.baris-kasus').forEach(function (tr) {
+        var bulanan = parseInt(tr.dataset.bulanan, 10) || 0;
+        var nominal = parseInt(tr.dataset.nominal, 10) || 0;
+        var cb = tr.querySelector('.cb-kasus');
+        sekarang += bulanan;
+        if (cb && cb.checked) {
+          terpilih = true;
+          sesudah += pilihan.value === 'cicil' ? Math.round(nominal / n) : nominal;
+        } else {
+          sesudah += bulanan;
+        }
+      });
+      if (terpilih) baris.push({ nama: kartu.dataset.nama, sekarang: sekarang, sesudah: sesudah, thp: kartu.dataset.thp === '' ? null : parseFloat(kartu.dataset.thp) });
+    });
+    baris.sort(function (a, b) { return b.sesudah - a.sesudah; });
+
+    var panel = document.getElementById('panel-pratinjau');
+    panel.style.display = baris.length ? '' : 'none';
+    document.getElementById('isi-pratinjau').innerHTML = baris.map(function (r) {
+      var pct = '-', status = '<span class="badge text-bg-secondary">Belum ada slip</span>', thp = '-';
+      if (r.thp !== null && r.thp > 0) {
+        thp = rp(r.thp);
+        var p = r.sesudah / r.thp * 100;
+        pct = p.toFixed(0) + '%';
+        if (r.sesudah > r.thp) status = '<span class="badge text-bg-danger">Melebihi THP</span>';
+        else if (p > batas) status = '<span class="badge text-bg-warning">Di atas batas</span>';
+        else status = '<span class="badge text-bg-success">Aman</span>';
+      } else if (r.thp !== null) {
+        thp = rp(r.thp);
+        status = '<span class="badge text-bg-danger">THP nol/minus</span>';
+      }
+      var nama = r.nama.replace(/[&<>"]/g, function (c) { return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]; });
+      return '<tr><td>' + nama + '</td><td class="text-end">' + rp(r.sekarang) + '</td><td class="text-end fw-bold">' + rp(r.sesudah) + '</td><td class="text-end">' + thp + '</td><td class="text-end">' + pct + '</td><td>' + status + '</td></tr>';
+    }).join('');
+  }
+
   function refresh() {
+    pratinjau();
     var jumlah = 0, total = 0;
     semua.forEach(function (c) { if (c.checked) { jumlah++; total += parseInt(c.dataset.nominal || '0', 10); } });
     document.getElementById('jumlah-dipilih').textContent = jumlah;
@@ -140,7 +199,9 @@
 
   var pilihan = document.getElementById('pilih-keputusan');
   var kolomBulan = document.getElementById('kolom-bulan');
-  pilihan.addEventListener('change', function () { kolomBulan.style.display = pilihan.value === 'cicil' ? '' : 'none'; });
+  pilihan.addEventListener('change', function () { kolomBulan.style.display = pilihan.value === 'cicil' ? '' : 'none'; pratinjau(); });
+  document.getElementById('jumlah-bulan').addEventListener('input', pratinjau);
+  document.getElementById('batas-persen').addEventListener('input', pratinjau);
 
   document.getElementById('form-massal').addEventListener('submit', function (e) {
     var n = document.getElementById('jumlah-dipilih').textContent;
