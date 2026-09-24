@@ -25,6 +25,10 @@
 <form method="POST" action="{{ url_for('berita_acara.keputusan_massal') }}" id="form-massal">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   <input type="hidden" name="periode_id" value="{{ periode_id_dipilih }}">
+  <input type="hidden" name="kembali" value="review">
+
+  <input type="search" id="cari-review" class="form-control mb-2" style="max-width: 360px;" placeholder="Cari AWB atau nama karyawan...">
+  <div id="tidak-ada-hasil" class="text-muted small mb-2" style="display:none;">Tidak ada resi/karyawan yang cocok.</div>
 
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
     <span class="fw-bold">{{ daftar_terurut|length }} karyawan &middot; Total keseluruhan: Rp {{ "{:,.0f}".format(total_keseluruhan).replace(",", ".") }}</span>
@@ -107,6 +111,9 @@
         <span class="small">bulan</span>
       </span>
       <button type="submit" class="btn btn-sm btn-primary" id="tombol-massal" disabled>Terapkan ke resi terpilih</button>
+      {% if level_akses_user('berita_acara') == 'approve' %}
+      <button type="submit" class="btn btn-sm btn-danger" id="tombol-hapus" formaction="{{ url_for('berita_acara.hapus_kasus') }}" disabled>Hapus resi terpilih</button>
+      {% endif %}
     </div>
   </div>
   {% endif %}
@@ -176,6 +183,8 @@
     document.getElementById('jumlah-dipilih').textContent = jumlah;
     document.getElementById('nominal-dipilih').textContent = fmt(total);
     tombol.disabled = jumlah === 0;
+    var tombolHapus = document.getElementById('tombol-hapus');
+    if (tombolHapus) tombolHapus.disabled = jumlah === 0;
     if (pilihSemua) { pilihSemua.checked = semua.length > 0 && jumlah === semua.length; }
     document.querySelectorAll('.cb-karyawan').forEach(function (h) {
       var anak = document.querySelectorAll('.' + h.dataset.target);
@@ -185,13 +194,15 @@
     });
   }
 
+  function terlihat(c) { var tr = c.closest('tr'); return !tr || tr.style.display !== 'none'; }
+
   if (pilihSemua) pilihSemua.addEventListener('change', function () {
-    semua.forEach(function (c) { c.checked = pilihSemua.checked; });
+    semua.forEach(function (c) { if (terlihat(c)) c.checked = pilihSemua.checked; });
     refresh();
   });
   document.querySelectorAll('.cb-karyawan').forEach(function (h) {
     h.addEventListener('change', function () {
-      document.querySelectorAll('.' + h.dataset.target).forEach(function (c) { c.checked = h.checked; });
+      document.querySelectorAll('.' + h.dataset.target).forEach(function (c) { if (terlihat(c)) c.checked = h.checked; });
       refresh();
     });
   });
@@ -205,8 +216,35 @@
 
   document.getElementById('form-massal').addEventListener('submit', function (e) {
     var n = document.getElementById('jumlah-dipilih').textContent;
+    if (e.submitter && e.submitter.id === 'tombol-hapus') {
+      var nom = document.getElementById('nominal-dipilih').textContent;
+      if (!confirm('Hapus ' + n + ' resi terpilih senilai Rp' + nom + '? Resi yang sudah pernah dipotong dilewati. Tindakan ini tidak bisa dibatalkan.')) e.preventDefault();
+      return;
+    }
     var teks = pilihan.value === 'cicil' ? 'cicilan ' + document.getElementById('jumlah-bulan').value + ' bulan' : 'potong langsung';
     if (!confirm('Ubah ' + n + ' resi terpilih menjadi ' + teks + '?')) e.preventDefault();
+  });
+  var cari = document.getElementById('cari-review');
+  cari.addEventListener('keydown', function (e) { if (e.key === 'Enter') e.preventDefault(); });
+  cari.addEventListener('input', function () {
+    var kata = cari.value.trim().toLowerCase();
+    var adaHasil = false;
+    document.querySelectorAll('.kartu-karyawan').forEach(function (kartu) {
+      var cocokNama = kata === '' || kartu.dataset.nama.toLowerCase().indexOf(kata) !== -1;
+      var adaBaris = false;
+      kartu.querySelectorAll('.baris-kasus').forEach(function (tr) {
+        var awb = tr.textContent.toLowerCase();
+        var tampil = kata === '' || cocokNama || awb.indexOf(kata) !== -1;
+        tr.style.display = tampil ? '' : 'none';
+        if (tampil) adaBaris = true;
+      });
+      var tampilKartu = kata === '' || cocokNama || adaBaris;
+      kartu.style.display = tampilKartu ? '' : 'none';
+      if (tampilKartu) adaHasil = true;
+      var rincian = kartu.querySelector('.rincian-ba');
+      if (kata !== '' && tampilKartu && rincian) bootstrap.Collapse.getOrCreateInstance(rincian, { toggle: false }).show();
+    });
+    document.getElementById('tidak-ada-hasil').style.display = (kata !== '' && !adaHasil) ? '' : 'none';
   });
   refresh();
 })();

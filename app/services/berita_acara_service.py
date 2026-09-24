@@ -116,6 +116,24 @@ def ubah_keputusan_massal(daftar_kasus, keputusan, jumlah_bulan=None):
     return berhasil, dilewati
 
 
+def hapus_kasus_massal(daftar_kasus):
+    """Hapus banyak kasus sekaligus. Kasus yang sudah pernah dipotong ke suatu periode
+    dilewati (nominalnya sudah tercatat di slip yang terbit). Cicilan yang belum pernah
+    dipotong ikut dihapus. Mengembalikan (jumlah_dihapus, jumlah_dilewati)."""
+    dihapus = 0
+    dilewati = 0
+    for kasus in daftar_kasus:
+        if kasus.sudah_diterapkan:
+            dilewati += 1
+            continue
+        if kasus.cicilan:
+            db.session.delete(kasus.cicilan)
+        db.session.delete(kasus)
+        dihapus += 1
+    db.session.commit()
+    return dihapus, dilewati
+
+
 def buat_cicilan(kasus, jumlah_bulan, commit=True):
     """Ubah keputusan kasus jadi cicil, buat entri CicilanBeritaAcara dengan saldo
     berjalan sendiri. Kalau sebelumnya sudah ada cicilan, hapus & buat ulang

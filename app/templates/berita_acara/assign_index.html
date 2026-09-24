@@ -1,29 +1,83 @@
 {% extends "base.html" %}
 {% block title %}Perlu Assignment{% endblock %}
 {% block content %}
+{% set bisa_hapus = level_akses_user('berita_acara') == 'approve' %}
 <h4 class="mb-3">Kasus Perlu Assignment Manual</h4>
 <p class="text-muted">Kasus dari data pusat yang tidak pernah ada prediksinya — perlu ditentukan karyawan yang bertanggung jawab.</p>
+
+<form method="GET" class="mb-3 d-flex flex-wrap gap-2">
+  <input type="search" name="q" value="{{ q }}" class="form-control" style="max-width: 320px;" placeholder="Cari AWB, mitra, atau region...">
+  <button type="submit" class="btn btn-outline-primary">Cari</button>
+  {% if q %}<a href="{{ url_for('berita_acara.assign_index') }}" class="btn btn-link">Reset</a>{% endif %}
+</form>
+<p class="text-muted small mb-2">{{ daftar|length }} resi. Klik judul kolom untuk mengurutkan.</p>
+
+{% if bisa_hapus %}
+<form method="POST" action="{{ url_for('berita_acara.hapus_kasus') }}" id="form-hapus-satu" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="kembali" value="assign">
+  <input type="hidden" name="kasus_id" id="hapus-satu-id" value="">
+</form>
+<form method="POST" action="{{ url_for('berita_acara.hapus_kasus') }}" id="form-hapus-massal">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="kembali" value="assign">
+  <div class="d-flex align-items-center gap-2 mb-2">
+    <button type="submit" class="btn btn-sm btn-danger" id="tombol-hapus-massal" disabled>Hapus resi terpilih (<span id="jumlah-terpilih">0</span>)</button>
+  </div>
+{% endif %}
 
 <div class="card shadow-sm">
   <div class="table-responsive">
     <table class="table table-striped mb-0">
-      <thead><tr><th>AWB</th><th>Nilai Claim</th><th>Mitra</th><th>Region</th><th></th></tr></thead>
+      <thead><tr>{% if bisa_hapus %}<th style="width:32px;"><input type="checkbox" class="form-check-input" id="pilih-semua-daftar" title="Pilih semua"></th>{% endif %}<th>AWB</th><th>Nilai Claim</th><th>Mitra</th><th>Region</th><th></th></tr></thead>
       <tbody>
         {% for kasus in daftar %}
         <tr>
+          {% if bisa_hapus %}<td>{% if not kasus.sudah_diterapkan %}<input type="checkbox" class="form-check-input cb-hapus" name="kasus_id" value="{{ kasus.id }}">{% endif %}</td>{% endif %}
           <td>{{ kasus.awb }}</td>
           <td>Rp {{ "{:,.0f}".format(kasus.nominal_pusat or 0).replace(",", ".") }}</td>
           <td>{{ kasus.mitra or '-' }}</td>
           <td>{{ kasus.region or '-' }}</td>
-          <td class="text-end">
+          <td class="text-end text-nowrap">
             <a href="{{ url_for('berita_acara.assign_kasus', kasus_id=kasus.id) }}" class="btn btn-sm btn-primary">Assign</a>
+            {% if bisa_hapus and not kasus.sudah_diterapkan %}
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="hapusSatu({{ kasus.id }}, {{ kasus.awb|tojson }})">Hapus</button>
+            {% endif %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="text-center text-muted py-4">Tidak ada kasus yang perlu assignment.</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-4">{% if q %}Tidak ada resi yang cocok dengan pencarian.{% else %}Tidak ada kasus yang perlu assignment.{% endif %}</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
 </div>
+{% if bisa_hapus %}
+</form>
+<script>
+(function () {
+  var semua = document.querySelectorAll('.cb-hapus');
+  var induk = document.getElementById('pilih-semua-daftar');
+  var tombol = document.getElementById('tombol-hapus-massal');
+  function refresh() {
+    var n = 0; semua.forEach(function (c) { if (c.checked) n++; });
+    document.getElementById('jumlah-terpilih').textContent = n;
+    tombol.disabled = n === 0;
+    induk.checked = semua.length > 0 && n === semua.length;
+  }
+  induk.addEventListener('change', function () { semua.forEach(function (c) { c.checked = induk.checked; }); refresh(); });
+  semua.forEach(function (c) { c.addEventListener('change', refresh); });
+  document.getElementById('form-hapus-massal').addEventListener('submit', function (e) {
+    var n = document.getElementById('jumlah-terpilih').textContent;
+    if (!confirm('Hapus ' + n + ' resi terpilih? Tindakan ini tidak bisa dibatalkan.')) e.preventDefault();
+  });
+  window.hapusSatu = function (id, awb) {
+    if (!confirm('Hapus resi ' + awb + '? Tindakan ini tidak bisa dibatalkan.')) return;
+    document.getElementById('hapus-satu-id').value = id;
+    document.getElementById('form-hapus-satu').submit();
+  };
+  refresh();
+})();
+</script>
+{% endif %}
 {% endblock %}

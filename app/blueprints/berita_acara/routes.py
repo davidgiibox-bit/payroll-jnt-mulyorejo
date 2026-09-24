@@ -3,6 +3,7 @@ import io
 from flask import render_template, redirect, url_for, flash, request, send_file
 from flask_login import login_required
 import openpyxl
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.models import ReasonClaim, KasusBeritaAcara, Karyawan, PeriodePayroll, SlipGaji
@@ -19,9 +20,11 @@ from app.services.berita_acara_service import (
     terapkan_potongan_periode,
     dampak_periode_berjalan,
     ubah_keputusan_massal,
+    hapus_kasus_massal,
 )
 
 KODE_MENU = "berita_acara"
+BATAS_TAMPIL = 1000
 
 KOLOM_TEMPLATE_PREDIKSI = ["AWB", "NIK Karyawan", "Nominal", "Reason Claim", "Tanggal", "Keterangan"]
 KOLOM_TEMPLATE_PUSAT = [
@@ -71,6 +74,10 @@ def reason_tambah():
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
 def reason_hapus(reason_id):
     reason = ReasonClaim.query.get_or_404(reason_id)
+    dipakai = KasusBeritaAcara.query.filter_by(reason_claim_id=reason.id).count()
+    if dipakai:
+        flash(f"Reason '{reason.nama}' masih dipakai oleh {dipakai} resi, tidak bisa dihapus.", "danger")
+        return redirect(url_for("berita_acara.reason_index"))
     db.session.delete(reason)
     db.session.commit()
     flash("Reason claim berhasil dihapus.", "success")
@@ -83,11 +90,58 @@ def reason_hapus(reason_id):
 @butuh_akses(KODE_MENU, LEVEL_LIHAT)
 def index():
     status_filter = request.args.get("status", "")
+    q = request.args.get("q", "").strip()
     query = KasusBeritaAcara.query
     if status_filter:
-        query = query.filter_by(status=status_filter)
-    daftar_kasus = query.order_by(KasusBeritaAcara.created_at.desc()).limit(200).all()
-    return render_template("berita_acara/index.html", daftar_kasus=daftar_kasus, status_filter=status_filter)
+        query = query.filter(KasusBeritaAcara.status == status_filter)
+    if q:
+        like = f"%{q}%"
+        query = query.outerjoin(Karyawan, KasusBeritaAcara.karyawan_id == Karyawan.id).filter(
+            or_(
+                KasusBeritaAcara.awb.ilike(like),
+                Karyawan.nama.ilike(like),
+                Karyawan.nik_karyawan.ilike(like),
+            )
+        )
+    total = query.count()
+    daftar_kasus = query.order_by(KasusBeritaAcara.created_at.desc()).limit(BATAS_TAMPIL).all()
+    return render_template(
+        "berita_acara/index.html",
+        daftar_kasus=daftar_kasus,
+        status_filter=status_filter,
+        q=q,
+        total=total,
+        batas_tampil=BATAS_TAMPIL,
+    )
+
+
+_KEMBALI = {
+    "index": "berita_acara.index",
+    "review": "berita_acara.review",
+    "assign": "berita_acara.assign_index",
+}
+
+
+@berita_acara_bp.route("/kasus/hapus", methods=["POST"])
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_APPROVE)
+def hapus_kasus():
+    id_list = request.form.getlist("kasus_id", type=int)
+    endpoint = _KEMBALI.get(request.form.get("kembali"), "berita_acara.index")
+    periode_id = request.form.get("periode_id", type=int)
+
+    if not id_list:
+        flash("Belum ada resi yang dipilih.", "warning")
+    else:
+        daftar_kasus = KasusBeritaAcara.query.filter(KasusBeritaAcara.id.in_(id_list)).all()
+        dihapus, dilewati = hapus_kasus_massal(daftar_kasus)
+        if dihapus:
+            flash(f"{dihapus} resi berhasil dihapus.", "success")
+        if dilewati:
+            flash(f"{dilewati} resi dilewati karena sudah pernah dipotong ke suatu periode.", "warning")
+    if endpoint == "berita_acara.review" and periode_id:
+        return redirect(url_for(endpoint, periode_id=periode_id))
+    return redirect(url_for(endpoint))
 
 
 # --- Upload Template Prediksi ---
@@ -168,8 +222,19 @@ def download_template_pusat():
 @login_required
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
 def assign_index():
-    daftar = KasusBeritaAcara.query.filter_by(karyawan_id=None).order_by(KasusBeritaAcara.created_at.desc()).all()
-    return render_template("berita_acara/assign_index.html", daftar=daftar)
+    q = request.args.get("q", "").strip()
+    query = KasusBeritaAcara.query.filter_by(karyawan_id=None)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            or_(
+                KasusBeritaAcara.awb.ilike(like),
+                KasusBeritaAcara.mitra.ilike(like),
+                KasusBeritaAcara.region.ilike(like),
+            )
+        )
+    daftar = query.order_by(KasusBeritaAcara.created_at.desc()).all()
+    return render_template("berita_acara/assign_index.html", daftar=daftar, q=q)
 
 
 @berita_acara_bp.route("/assign/<int:kasus_id>", methods=["GET", "POST"])
