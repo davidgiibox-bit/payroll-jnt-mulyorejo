@@ -55,6 +55,18 @@ def buat_blueprint_upload(slug, kode_menu, label, jenis, arah):
             kode_menu=kode_menu,
         )
 
+    @bp.route("/template", endpoint="download_template")
+    @login_required
+    @butuh_akses(kode_menu, LEVEL_LIHAT)
+    def download_template():
+        from app.utils.template_excel import kirim_template_excel
+
+        return kirim_template_excel(
+            f"template_{slug}.xlsx",
+            ["NIK", "Nominal", "Keterangan"],
+            ["JM0010001", 100000, ""],
+        )
+
     @bp.route("/unggah", methods=["POST"], endpoint="unggah")
     @login_required
     @butuh_akses(kode_menu, LEVEL_EDIT)

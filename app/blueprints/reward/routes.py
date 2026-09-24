@@ -90,6 +90,22 @@ def index():
     )
 
 
+@reward_bp.route("/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_LIHAT)
+def download_template():
+    from app.utils.template_excel import kirim_template_excel
+
+    daftar_jenis = [j.nama for j in JenisReward.query.order_by(JenisReward.nama).all()]
+    return kirim_template_excel(
+        "template_reward.xlsx",
+        ["NIK", "Jenis Reward", "Nominal", "Keterangan"],
+        ["JM0010001", daftar_jenis[0] if daftar_jenis else "MKT App", 100000, ""],
+        daftar_jenis=daftar_jenis,
+        judul_daftar_jenis="Daftar Jenis Reward",
+    )
+
+
 @reward_bp.route("/unggah", methods=["POST"])
 @login_required
 @butuh_akses(KODE_MENU, LEVEL_EDIT)

@@ -21,7 +21,7 @@
           {{ form.submit(class="btn btn-primary w-100") }}
         </div>
       </div>
-      <p class="text-muted small mt-2 mb-0">Format kolom: NIK, Nominal, Keterangan. Upload ulang untuk periode yang sama akan MENGGANTI total seluruh data {{ label }} periode tsb.</p>
+      <p class="text-muted small mt-2 mb-0"><a href="{{ url_for(request.blueprint ~ '.download_template') }}" class="btn btn-sm btn-outline-secondary me-2">Download Template Excel</a>Format kolom: NIK, Nominal, Keterangan. Upload ulang untuk periode yang sama akan MENGGANTI total seluruh data {{ label }} periode tsb.</p>
     </form>
   </div>
 </div>

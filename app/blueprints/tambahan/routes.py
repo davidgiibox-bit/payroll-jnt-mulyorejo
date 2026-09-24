@@ -85,6 +85,22 @@ def index():
     )
 
 
+@tambahan_bp.route("/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_LIHAT)
+def download_template():
+    from app.utils.template_excel import kirim_template_excel
+
+    daftar_jenis = [j.nama for j in JenisTambahan.query.order_by(JenisTambahan.nama).all()]
+    return kirim_template_excel(
+        "template_tambahan.xlsx",
+        ["NIK", "Jenis Tambahan", "Nominal", "Keterangan"],
+        ["JM0010001", daftar_jenis[0] if daftar_jenis else "Lembur", 100000, ""],
+        daftar_jenis=daftar_jenis,
+        judul_daftar_jenis="Daftar Jenis Tambahan",
+    )
+
+
 @tambahan_bp.route("/unggah", methods=["POST"])
 @login_required
 @butuh_akses(KODE_MENU, LEVEL_EDIT)

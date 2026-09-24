@@ -87,6 +87,22 @@ def index():
     )
 
 
+@potongan_lainnya_bp.route("/template")
+@login_required
+@butuh_akses(KODE_MENU, LEVEL_LIHAT)
+def download_template():
+    from app.utils.template_excel import kirim_template_excel
+
+    daftar_jenis = [j.nama for j in JenisPotonganLainnya.query.order_by(JenisPotonganLainnya.nama).all()]
+    return kirim_template_excel(
+        "template_potongan_lainnya.xlsx",
+        ["NIK", "Jenis Potongan Lainnya", "Nominal", "Keterangan"],
+        ["JM0010001", daftar_jenis[0] if daftar_jenis else "Denda Administrasi", 100000, ""],
+        daftar_jenis=daftar_jenis,
+        judul_daftar_jenis="Daftar Jenis Potongan Lainnya",
+    )
+
+
 @potongan_lainnya_bp.route("/unggah", methods=["POST"])
 @login_required
 @butuh_akses(KODE_MENU, LEVEL_EDIT)
