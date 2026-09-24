@@ -73,6 +73,7 @@
           });
         }
         urut.concat(lain).forEach(function (tr) { tbody.appendChild(tr); });
+        tabel.dispatchEvent(new CustomEvent('tabel-diurutkan'));
       });
     });
   }

@@ -64,9 +64,22 @@ def create_app(config_class=Config):
 
     from app.utils.akses import level_akses_user
 
+    import os
+
+    def url_statis(filename):
+        """URL file statis + ?v=<waktu ubah file>, supaya browser memuat ulang JS/CSS
+        yang berubah setelah deploy (bukan memakai versi lama dari cache)."""
+        from flask import url_for
+
+        try:
+            versi = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+        except OSError:
+            versi = 0
+        return url_for("static", filename=filename, v=versi)
+
     @app.context_processor
     def inject_helpers():
-        return dict(level_akses_user=level_akses_user)
+        return dict(level_akses_user=level_akses_user, url_statis=url_statis)
 
     from app.cli import register_cli
 
